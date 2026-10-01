@@ -1,0 +1,18 @@
+@import './styles/global.css';
+@import './components/components.css';
+@import './styles/pages.css';
+@import './styles/phase2.css';
+@import './styles/admin.css';
+@import './styles/phase4.css';
+
+@import './styles/welcome.css';
+@import './styles/nearby-ngos.css';
+@import './styles/my-donations.css';
+
+@import './styles/donate-flow.css';
+@import './styles/donor-tracking.css';
+@import './styles/donor-notifications.css';
+@import './styles/donor-profile.css';
+@import './styles/register.css';
+@import './styles/donor-dashboard.css';
+@import './styles/mapview.css';

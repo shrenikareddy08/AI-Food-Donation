@@ -1,0 +1,755 @@
+/* =========================================================
+   MEALBRIDGE - REGISTER PAGE
+========================================================= */
+
+.register-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #050505;
+  color: #f5f5f5;
+}
+
+/* =========================================================
+   LEFT VISUAL
+========================================================= */
+
+.register-visual {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #101010;
+}
+
+.register-visual__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.register-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.05),
+      rgba(0, 0, 0, 0.72)
+    );
+  pointer-events: none;
+}
+
+.register-visual__overlay {
+  position: absolute;
+  left: 42px;
+  right: 42px;
+  bottom: 44px;
+  z-index: 2;
+}
+
+.register-visual__title {
+  margin: 0 0 12px;
+  color: #ffffff;
+  font-size: clamp(30px, 3vw, 46px);
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.register-visual__benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 20px;
+}
+
+.register-visual__benefit {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.register-visual__benefit-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  background: rgba(242, 196, 94, 0.16);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================================================
+   FORM SIDE
+========================================================= */
+
+.register-form-side {
+  min-height: 100vh;
+  padding: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.register-card {
+  width: min(620px, 100%);
+  padding: 34px;
+  border: 1px solid #272727;
+  border-radius: 24px;
+  background:
+    linear-gradient(
+      180deg,
+      #111111 0%,
+      #0b0b0b 100%
+    );
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   ROLE SELECTOR
+========================================================= */
+
+.role-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.role-option {
+  min-height: 110px;
+  padding: 14px 10px;
+  border: 1px solid #2c2c2c;
+  border-radius: 15px;
+  background: #101010;
+  color: #d0d0d0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.role-option:hover {
+  border-color: #535353;
+  background: #151515;
+  transform: translateY(-1px);
+}
+
+.role-option--active {
+  border-color: #e0b64e;
+  background: rgba(242, 196, 94, 0.08);
+}
+
+.role-option__icon {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(242, 196, 94, 0.09);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.role-option__label {
+  color: #eeeeee;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.role-option__desc {
+  margin-top: 3px;
+  color: #747474;
+  font-size: 11px;
+}
+
+/* =========================================================
+   STEP INDICATOR
+========================================================= */
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 26px;
+}
+
+.step-indicator__item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #717171;
+  font-size: 12px;
+}
+
+.step-indicator__item--active {
+  color: #f2c45e;
+  font-weight: 750;
+}
+
+.step-indicator__item--done {
+  color: #e7e7e7;
+}
+
+.step-indicator__dot {
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  border: 1px solid #3a3a3a;
+  background: #141414;
+  color: #7b7b7b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.step-indicator__item--active
+  .step-indicator__dot {
+  border-color: #f2c45e;
+  background: #f2c45e;
+  color: #111;
+}
+
+.step-indicator__item--done
+  .step-indicator__dot {
+  border-color: #f2c45e;
+  background: #f2c45e;
+  color: #111;
+}
+
+.step-indicator__label {
+  white-space: nowrap;
+}
+
+.step-indicator__line {
+  height: 2px;
+  flex: 1;
+  min-width: 20px;
+  margin: 0 7px;
+  background: #2e2e2e;
+}
+
+.step-indicator__line--done {
+  background: #f2c45e;
+}
+
+/* =========================================================
+   GENERAL FORM FIXES
+========================================================= */
+
+.register-card .form-group {
+  margin-bottom: 18px;
+}
+
+.register-card .form-label {
+  color: #b8b8b8;
+}
+
+.register-card .form-input,
+.register-card .form-textarea,
+.register-card .form-select {
+  width: 100%;
+  border-color: #2c2c2c;
+  background: #101010;
+  color: #f3f3f3;
+}
+
+.register-card .form-input::placeholder,
+.register-card .form-textarea::placeholder {
+  color: #626262;
+}
+
+.register-card .form-input:focus,
+.register-card .form-textarea:focus,
+.register-card .form-select:focus {
+  border-color: #d1a94d;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(242, 196, 94, 0.08);
+}
+
+.register-card .form-hint {
+  color: #727d8c;
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.register-card .form-error {
+  border: 1px solid rgba(238, 102, 102, 0.18);
+  background: rgba(238, 102, 102, 0.07);
+  color: #ff9f9f;
+  border-radius: 13px;
+  margin-bottom: 18px;
+}
+
+/* =========================================================
+   PASSWORD
+========================================================= */
+
+.password-field {
+  position: relative;
+}
+
+.password-field .form-input {
+  width: 100%;
+}
+
+.password-field__toggle {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #818181;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.password-field__toggle:hover {
+  color: #f2c45e;
+}
+
+/* =========================================================
+   LOCATION
+========================================================= */
+
+.location-picker {
+  padding: 15px;
+  border: 1px solid #292929;
+  border-radius: 16px;
+  background: #0d0d0d;
+}
+
+.location-picker__btn {
+  width: 100%;
+  min-height: 45px;
+  padding: 0 15px;
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  background: #151515;
+  color: #e7e7e7;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.location-picker__btn:hover {
+  border-color: #c69d42;
+  color: #f2c45e;
+}
+
+/* =========================================================
+   REVIEW
+========================================================= */
+
+.register-review-title {
+  margin: 0 0 15px;
+  color: #f2f2f2;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.donate-summary {
+  border: 1px solid #282828;
+  border-radius: 17px;
+  background: #111;
+  overflow: hidden;
+}
+
+.donate-summary__row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 15px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #222;
+}
+
+.donate-summary__row:last-child {
+  border-bottom: 0;
+}
+
+.donate-summary__label {
+  color: #8390a0;
+  font-size: 13px;
+}
+
+.donate-summary__value {
+  color: #eeeeee;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   OTP HEADER
+========================================================= */
+
+.register-otp-header {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.register-otp-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 13px;
+  border-radius: 18px;
+  background: rgba(242, 196, 94, 0.09);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.register-otp-header h3 {
+  margin: 0 0 7px;
+  color: #f1f1f1;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.register-otp-header p {
+  margin: 0;
+  color: #8a8a8a;
+  font-size: 13px;
+}
+
+.register-otp-header strong {
+  display: block;
+  margin-top: 5px;
+  color: #f2c45e;
+  font-size: 14px;
+}
+
+/* =========================================================
+   OTP INPUT
+========================================================= */
+
+.register-card input[autocomplete='one-time-code'] {
+  min-height: 57px;
+  border: 1px solid #4c3b16;
+  background: #111111;
+  color: #f5f5f5;
+  border-radius: 14px;
+}
+
+.register-card input[autocomplete='one-time-code']:focus {
+  border-color: #e0b34e;
+  box-shadow:
+    0 0 0 3px rgba(242, 196, 94, 0.08);
+}
+
+/* =========================================================
+   DEVELOPMENT OTP
+========================================================= */
+
+.register-development-otp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 15px 0;
+  padding: 11px 13px;
+  border: 1px dashed rgba(242, 196, 94, 0.28);
+  border-radius: 12px;
+  background: rgba(242, 196, 94, 0.05);
+  color: #9f906d;
+  font-size: 12px;
+}
+
+.register-development-otp strong {
+  color: #f2c45e;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+/* =========================================================
+   VERIFY BUTTON
+========================================================= */
+
+.register-verify-button {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 18px;
+  border: 1px solid #d5ad4e !important;
+  border-radius: 13px !important;
+  background: #f2c45e !important;
+  color: #111111 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.register-verify-button:hover:not(:disabled) {
+  background: #ffd36f !important;
+  color: #111111 !important;
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 24px rgba(242, 196, 94, 0.12) !important;
+}
+
+.register-verify-button:disabled {
+  background: #8f7740 !important;
+  color: #1d1d1d !important;
+  opacity: 0.6 !important;
+  cursor: default;
+  transform: none;
+}
+
+/* =========================================================
+   OTP SUCCESS
+========================================================= */
+
+.register-otp-success {
+  min-height: 48px;
+  padding: 0 15px;
+  border: 1px solid rgba(72, 210, 126, 0.2);
+  border-radius: 13px;
+  background: rgba(72, 210, 126, 0.08);
+  color: #68db91;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+/* =========================================================
+   RESEND
+========================================================= */
+
+.register-resend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 16px;
+  color: #747474;
+  font-size: 12px;
+}
+
+.register-resend button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #f2c45e;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.register-resend button:hover:not(:disabled) {
+  color: #ffd36f;
+}
+
+.register-resend button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* =========================================================
+   OTP INFO
+========================================================= */
+
+.register-otp-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 13px 14px;
+  border: 1px solid rgba(242, 196, 94, 0.11);
+  border-radius: 14px;
+  background: rgba(242, 196, 94, 0.05);
+  color: #8d8d8d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.register-otp-intro svg {
+  flex: 0 0 auto;
+  color: #f2c45e;
+}
+
+/* =========================================================
+   BUTTON AREA
+========================================================= */
+
+.step-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.step-actions button {
+  min-height: 48px;
+}
+
+/* =========================================================
+   AUTH FOOTER
+========================================================= */
+
+.register-card .auth-card__footer {
+  margin-top: 24px;
+  color: #777;
+  text-align: center;
+}
+
+.register-card .auth-card__footer a {
+  color: #f2c45e;
+  font-weight: 750;
+}
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+.animate-fade-in {
+  animation: register-fade-in 0.2s ease;
+}
+
+@keyframes register-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.register-spin {
+  animation: register-spin 0.8s linear infinite;
+}
+
+@keyframes register-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1000px) {
+  .register-page {
+    grid-template-columns: 1fr;
+  }
+
+  .register-visual {
+    display: none;
+  }
+
+  .register-form-side {
+    min-height: 100vh;
+    padding: 25px 18px 50px;
+  }
+
+  .register-card {
+    width: min(680px, 100%);
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+  .register-form-side {
+    padding: 15px 12px 75px;
+    align-items: flex-start;
+  }
+
+  .register-card {
+    padding: 20px 14px;
+    border-radius: 18px;
+  }
+
+  .role-selector {
+    gap: 7px;
+  }
+
+  .role-option {
+    min-height: 95px;
+    padding: 10px 6px;
+  }
+
+  .role-option__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .role-option__label {
+    font-size: 12px;
+  }
+
+  .role-option__desc {
+    font-size: 9px;
+  }
+
+  .step-indicator {
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+
+  .step-indicator__line {
+    min-width: 12px;
+  }
+
+  .step-indicator__label {
+    font-size: 10px;
+  }
+
+  .donate-summary__row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .donate-summary__value {
+    text-align: left;
+  }
+
+  .register-resend {
+    flex-wrap: wrap;
+  }
+}

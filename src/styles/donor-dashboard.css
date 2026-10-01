@@ -1,0 +1,638 @@
+/* =========================================================
+   MEALBRIDGE - DONOR DASHBOARD
+========================================================= */
+
+.donor-dashboard-page {
+  min-height: calc(100vh - 78px);
+  padding: 30px 0 70px;
+  background: #050505;
+  color: #f5f5f5;
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.donor-dashboard-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 25px;
+  margin-bottom: 28px;
+}
+
+.donor-dashboard-hero h1 {
+  margin: 0;
+  color: #f4f4f4;
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 820;
+  line-height: 1.05;
+  letter-spacing: -1.4px;
+}
+
+.donor-dashboard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: #8091a6;
+  font-size: 13px;
+}
+
+.donor-dashboard-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.donor-dashboard-meta svg {
+  color: #7e8c9c;
+}
+
+.donor-dashboard-location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #9baabd;
+  font-size: 14px;
+}
+
+.donor-dashboard-donate-button {
+  min-height: 50px;
+  padding: 0 20px;
+  border: 1px solid #d7af4d;
+  border-radius: 14px;
+  background: #f2c45e;
+  color: #111;
+  font-size: 15px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.donor-dashboard-donate-button:hover {
+  background: #ffd470;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(242, 196, 94, 0.13);
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.donor-dashboard-error {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid rgba(236, 104, 104, 0.22);
+  border-radius: 15px;
+  background: rgba(236, 104, 104, 0.07);
+  color: #ffaaa5;
+}
+
+.donor-dashboard-error span {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.donor-dashboard-error button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 170, 160, 0.25);
+  border-radius: 9px;
+  background: transparent;
+  color: #ffb4ad;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.donor-dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 28px;
+}
+
+.donor-dashboard-stat-card {
+  min-height: 145px;
+  padding: 20px;
+  border: 1px solid #292929;
+  border-top: 3px solid #d9b14d;
+  border-radius: 19px;
+  background:
+    linear-gradient(
+      180deg,
+      #121212 0%,
+      #0e0e0e 100%
+    );
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.donor-dashboard-stat-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  background: rgba(242, 196, 94, 0.08);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donor-dashboard-stat-card strong {
+  display: block;
+  color: #f3f3f3;
+  font-size: 33px;
+  font-weight: 820;
+  line-height: 1;
+}
+
+.donor-dashboard-stat-card span {
+  display: block;
+  margin-top: 6px;
+  color: #888;
+  font-size: 13px;
+}
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.donor-dashboard-section {
+  margin-bottom: 25px;
+  border: 1px solid #252525;
+  border-radius: 22px;
+  background: #0e0e0e;
+  overflow: hidden;
+}
+
+.donor-dashboard-section-header {
+  min-height: 82px;
+  padding: 17px 20px;
+  border-bottom: 1px solid #242424;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.donor-dashboard-section-header > div > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #6f8198;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.4px;
+}
+
+.donor-dashboard-section-header h2 {
+  margin: 0;
+  color: #eeeeee;
+  font-size: 22px;
+  font-weight: 790;
+}
+
+.donor-dashboard-section-header button {
+  border: 0;
+  background: transparent;
+  color: #f2c45e;
+  font-size: 13px;
+  font-weight: 750;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.donor-dashboard-loading {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #7f8b9a;
+  font-size: 13px;
+}
+
+.donor-dashboard-spin {
+  animation: donor-dashboard-spin 0.8s linear infinite;
+}
+
+@keyframes donor-dashboard-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.donor-dashboard-empty {
+  min-height: 290px;
+  padding: 35px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.donor-dashboard-empty-icon {
+  width: 66px;
+  height: 66px;
+  border-radius: 19px;
+  background: rgba(242, 196, 94, 0.08);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donor-dashboard-empty h3 {
+  margin: 15px 0 6px;
+  color: #ededed;
+  font-size: 20px;
+  font-weight: 780;
+}
+
+.donor-dashboard-empty p {
+  max-width: 440px;
+  margin: 0;
+  color: #777;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.donor-dashboard-empty button {
+  margin-top: 18px;
+  min-height: 43px;
+  padding: 0 16px;
+  border: 1px solid #d1aa4f;
+  border-radius: 12px;
+  background: #f2c45e;
+  color: #111;
+  font-size: 13px;
+  font-weight: 750;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+/* =========================================================
+   DONATION LIST
+========================================================= */
+
+.donor-dashboard-donations {
+  display: flex;
+  flex-direction: column;
+}
+
+.donor-dashboard-donation-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #202020;
+  transition: background 0.2s ease;
+}
+
+.donor-dashboard-donation-card:last-child {
+  border-bottom: 0;
+}
+
+.donor-dashboard-donation-card:hover {
+  background: #131313;
+}
+
+.donor-dashboard-donation-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 13px;
+  background: rgba(242, 196, 94, 0.08);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donor-dashboard-donation-content {
+  min-width: 0;
+}
+
+.donor-dashboard-donation-content > div:first-child h3 {
+  margin: 0;
+  color: #ededed;
+  font-size: 15px;
+  font-weight: 760;
+}
+
+.donor-dashboard-donation-content > div:first-child span {
+  display: block;
+  margin-top: 4px;
+  color: #6f8199;
+  font-size: 11px;
+}
+
+.donor-dashboard-donation-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.donor-dashboard-donation-info strong {
+  color: #e4c15f;
+  font-size: 12px;
+}
+
+.donor-dashboard-donation-info span {
+  color: #727c88;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.donor-dashboard-donation-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 9px;
+}
+
+.donor-dashboard-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.donor-dashboard-status--posted {
+  background: rgba(242, 196, 94, 0.09);
+  color: #efc45f;
+}
+
+.donor-dashboard-status--matched,
+.donor-dashboard-status--accepted,
+.donor-dashboard-status--picked-up {
+  background: rgba(102, 169, 232, 0.09);
+  color: #7cb2e5;
+}
+
+.donor-dashboard-status--in-transit {
+  background: rgba(169, 130, 231, 0.09);
+  color: #bb98ef;
+}
+
+.donor-dashboard-status--delivered {
+  background: rgba(73, 208, 128, 0.09);
+  color: #66d991;
+}
+
+.donor-dashboard-status--cancelled {
+  background: rgba(232, 101, 101, 0.09);
+  color: #ef8a8a;
+}
+
+.donor-dashboard-donation-right button {
+  border: 0;
+  background: transparent;
+  color: #f2c45e;
+  font-size: 12px;
+  font-weight: 750;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+.donor-dashboard-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.donor-dashboard-quick-actions button {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #272727;
+  border-radius: 18px;
+  background: #101010;
+  color: #e5e5e5;
+  display: grid;
+  grid-template-columns: 43px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.donor-dashboard-quick-actions button:hover {
+  background: #151515;
+  border-color: #3b3b3b;
+  transform: translateY(-1px);
+}
+
+.donor-dashboard-quick-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  background: rgba(242, 196, 94, 0.08);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donor-dashboard-quick-actions strong {
+  display: block;
+  color: #ededed;
+  font-size: 14px;
+}
+
+.donor-dashboard-quick-actions span {
+  display: block;
+  margin-top: 4px;
+  color: #737d8b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.donor-dashboard-quick-actions button > svg {
+  color: #717d8d;
+}
+
+/* =========================================================
+   FOOTER REFRESH
+========================================================= */
+
+.donor-dashboard-refresh {
+  display: flex;
+  justify-content: center;
+}
+
+.donor-dashboard-refresh button {
+  min-height: 37px;
+  padding: 0 13px;
+  border: 1px solid #272727;
+  border-radius: 10px;
+  background: #101010;
+  color: #747f8e;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.donor-dashboard-refresh button:hover {
+  color: #c5c5c5;
+  border-color: #383838;
+}
+
+.donor-dashboard-refresh button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+  .donor-dashboard-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .donor-dashboard-hero {
+    align-items: flex-start;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+  .donor-dashboard-page {
+    padding: 22px 0 85px;
+  }
+
+  .donor-dashboard-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 17px;
+  }
+
+  .donor-dashboard-hero h1 {
+    font-size: 36px;
+  }
+
+  .donor-dashboard-donate-button {
+    width: 100%;
+  }
+
+  .donor-dashboard-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .donor-dashboard-stat-card {
+    min-height: 125px;
+    padding: 16px;
+  }
+
+  .donor-dashboard-stat-card strong {
+    font-size: 28px;
+  }
+
+  .donor-dashboard-section {
+    border-radius: 19px;
+  }
+
+  .donor-dashboard-section-header {
+    padding: 15px;
+  }
+
+  .donor-dashboard-donation-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
+    padding: 15px;
+  }
+
+  .donor-dashboard-donation-right {
+    grid-column: 2;
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .donor-dashboard-quick-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 430px) {
+  .donor-dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .donor-dashboard-hero h1 {
+    font-size: 32px;
+  }
+
+  .donor-dashboard-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .donor-dashboard-donation-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+}

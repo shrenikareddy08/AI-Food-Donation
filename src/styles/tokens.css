@@ -1,0 +1,186 @@
+:root {
+  /* ===== Color System — Premium Black + Charcoal + Champagne Gold ===== */
+  /* Primary — Champagne Gold */
+  --color-primary-50: #1A1510;
+  --color-primary-100: #211B13;
+  --color-primary-200: #2A2218;
+  --color-primary-300: #3D3220;
+  --color-primary-400: #C99E52;
+  --color-primary-500: #E7B75A;
+  --color-primary-600: #E7B75A;
+  --color-primary-700: #F2C76B;
+  --color-primary-800: #D4A247;
+  --color-primary-900: #B88A38;
+
+  /* Secondary — Warm Gold */
+  --color-secondary-50: #1A1510;
+  --color-secondary-100: #211B13;
+  --color-secondary-200: #2A2218;
+  --color-secondary-300: #3D3220;
+  --color-secondary-400: #F2C76B;
+  --color-secondary-500: #F2C76B;
+  --color-secondary-600: #E7B75A;
+  --color-secondary-700: #D4A247;
+  --color-secondary-800: #B88A38;
+  --color-secondary-900: #9C7329;
+
+  /* Accent — Champagne Gold (alias of primary) */
+  --color-accent-50: #1A1510;
+  --color-accent-100: #211B13;
+  --color-accent-200: #2A2218;
+  --color-accent-300: #3D3220;
+  --color-accent-400: #F2C76B;
+  --color-accent-500: #E7B75A;
+  --color-accent-600: #E7B75A;
+  --color-accent-700: #D4A247;
+  --color-accent-800: #B88A38;
+  --color-accent-900: #9C7329;
+
+  /* Success — Gold (completed states) */
+  --color-success-50: #1A1510;
+  --color-success-100: #211B13;
+  --color-success-200: #2A2218;
+  --color-success-300: #3D3220;
+  --color-success-400: #F2C76B;
+  --color-success-500: #E7B75A;
+  --color-success-600: #E7B75A;
+  --color-success-700: #D4A247;
+  --color-success-800: #B88A38;
+  --color-success-900: #9C7329;
+
+  /* Warning — Amber */
+  --color-warning-50: #1A1610;
+  --color-warning-100: #221E14;
+  --color-warning-200: #2A2418;
+  --color-warning-300: #4A3E20;
+  --color-warning-400: #E8B84A;
+  --color-warning-500: #D4A22A;
+  --color-warning-600: #D4A22A;
+  --color-warning-700: #B88820;
+  --color-warning-800: #946E16;
+  --color-warning-900: #6E5210;
+
+  /* Error / Danger */
+  --color-error-50: #1A1010;
+  --color-error-100: #221414;
+  --color-error-200: #2A1818;
+  --color-error-300: #4A2020;
+  --color-error-400: #F06868;
+  --color-error-500: #E05A5A;
+  --color-error-600: #E05A5A;
+  --color-error-700: #C04848;
+  --color-error-800: #9E3A3A;
+  --color-error-900: #7A2C2C;
+
+  /* Neutrals — Pure Dark Charcoal/Black */
+  --color-neutral-0: #050505;
+  --color-neutral-50: #050505;
+  --color-neutral-100: #0B0B0B;
+  --color-neutral-150: #111111;
+  --color-neutral-200: #262626;
+  --color-neutral-300: #333333;
+  --color-neutral-400: #404040;
+  --color-neutral-500: #70706B;
+  --color-neutral-600: #5A5A55;
+  --color-neutral-700: #4A4A45;
+  --color-neutral-800: #3A3A36;
+  --color-neutral-900: #2A2A28;
+
+  /* Semantic Aliases */
+  --color-bg: #050505;
+  --color-bg-warm: #0B0B0B;
+  --color-surface: #111111;
+  --color-surface-elevated: #171717;
+  --color-card: #111111;
+  --color-border: #262626;
+  --color-border-strong: #333333;
+  --color-text: #F5F5F2;
+  --color-text-secondary: #A7A7A1;
+  --color-text-tertiary: #70706B;
+  --color-text-inverse: #050505;
+  --color-brand: #E7B75A;
+  --color-brand-dark: #F2C76B;
+  --color-brand-light: #3D3220;
+  --color-accent: #E7B75A;
+
+  /* ===== Typography ===== */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Poppins', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+
+  --text-2xs: 0.625rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* ===== Spacing (8px system) ===== */
+  --space-0: 0;
+  --space-1: 0.125rem;
+  --space-2: 0.25rem;
+  --space-3: 0.5rem;
+  --space-4: 0.75rem;
+  --space-5: 1rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 4rem;
+  --space-11: 5rem;
+  --space-12: 6rem;
+
+  /* ===== Radii ===== */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ===== Shadows — dark theme ===== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-brand: 0 8px 24px rgba(231, 183, 90, 0.2);
+  --shadow-accent: 0 8px 24px rgba(231, 183, 90, 0.2);
+  --shadow-glow: 0 0 20px rgba(231, 183, 90, 0.12);
+
+  /* ===== Transitions ===== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ===== Layout ===== */
+  --navbar-height: 4rem;
+  --bottomnav-height: 3.5rem;
+  --max-width: 1280px;
+  --sidebar-width: 260px;
+
+  /* ===== Z-Index Scale ===== */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-drawer: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-map-marker: 600;
+}

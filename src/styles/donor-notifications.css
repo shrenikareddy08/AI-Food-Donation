@@ -1,0 +1,709 @@
+/* =========================================================
+   MEALBRIDGE - DONOR NOTIFICATIONS
+========================================================= */
+
+.donor-notifications-page {
+  min-height: calc(100vh - 78px);
+  padding: 35px 0 70px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(242, 196, 94, 0.07),
+      transparent 34%
+    ),
+    #050505;
+  color: #f4f4f4;
+}
+
+.donor-notifications-container {
+  width: min(1200px, calc(100% - 44px));
+  margin: 0 auto;
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.donor-notifications-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 25px;
+  margin-bottom: 22px;
+}
+
+.donor-notifications-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+  color: #d9b75d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.donor-notifications-hero h1 {
+  margin: 0;
+  color: #f7f7f7;
+  font-size: clamp(40px, 5vw, 58px);
+  line-height: 1.05;
+  font-weight: 820;
+  letter-spacing: -1.5px;
+}
+
+.donor-notifications-hero p {
+  max-width: 720px;
+  margin: 11px 0 0;
+  color: #919191;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.donor-notifications-hero-actions {
+  flex: 0 0 auto;
+}
+
+.donor-notifications-refresh {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid #d6ae50;
+  border-radius: 14px;
+  background: #f2c45e;
+  color: #111;
+  font-size: 14px;
+  font-weight: 750;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.donor-notifications-refresh:hover {
+  background: #ffd36f;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(242, 196, 94, 0.15);
+}
+
+.donor-notifications-refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+/* =========================================================
+   META
+========================================================= */
+
+.donor-notifications-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 18px;
+  margin-bottom: 22px;
+  border: 1px solid #232323;
+  border-radius: 17px;
+  background: #0d0d0d;
+}
+
+.donor-notifications-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #8e8e8e;
+  font-size: 14px;
+}
+
+.donor-notifications-time svg {
+  color: #d5b45e;
+}
+
+.donor-notifications-time strong {
+  color: #e7e7e7;
+  font-weight: 700;
+}
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+.donor-notifications-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.donor-notifications-summary-card {
+  min-height: 92px;
+  padding: 17px 18px;
+  border: 1px solid #262626;
+  border-radius: 19px;
+  background: #101010;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.donor-notifications-summary-icon {
+  width: 45px;
+  height: 45px;
+  flex: 0 0 45px;
+  border-radius: 13px;
+  background: rgba(242, 196, 94, 0.1);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donor-notifications-summary-icon--unread {
+  background: rgba(75, 211, 131, 0.1);
+  color: #67dc94;
+}
+
+.donor-notifications-summary-card span {
+  display: block;
+  margin-bottom: 5px;
+  color: #808080;
+  font-size: 13px;
+}
+
+.donor-notifications-summary-card strong {
+  display: block;
+  color: #f1f1f1;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.donor-notifications-summary-action {
+  display: flex;
+  align-items: stretch;
+}
+
+.donor-notifications-summary-action button {
+  min-width: 170px;
+  padding: 0 17px;
+  border: 1px solid #2b2b2b;
+  border-radius: 15px;
+  background: #131313;
+  color: #dedede;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.donor-notifications-summary-action button:hover:not(:disabled) {
+  background: #1a1a1a;
+  border-color: #3d3d3d;
+}
+
+.donor-notifications-summary-action button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.donor-notifications-controls {
+  margin-bottom: 18px;
+}
+
+.donor-notifications-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid #242424;
+  border-radius: 14px;
+  background: #0f0f0f;
+}
+
+.donor-notifications-filter-btn {
+  min-height: 37px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #838383;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.donor-notifications-filter-btn span {
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #747474;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.donor-notifications-filter-btn:hover {
+  color: #cfcfcf;
+}
+
+.donor-notifications-filter-btn--active {
+  background: #f2c45e;
+  color: #111;
+}
+
+.donor-notifications-filter-btn--active:hover {
+  color: #111;
+}
+
+.donor-notifications-filter-btn--active span {
+  background: rgba(17, 17, 17, 0.13);
+  color: #111;
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.donor-notifications-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(234, 110, 110, 0.22);
+  border-radius: 15px;
+  background: rgba(234, 110, 110, 0.07);
+  color: #ffaaa1;
+}
+
+.donor-notifications-error > svg {
+  flex: 0 0 auto;
+}
+
+.donor-notifications-error > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.donor-notifications-error strong {
+  display: block;
+  color: #ffc0b8;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.donor-notifications-error span {
+  display: block;
+  color: #b58d87;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.donor-notifications-error button {
+  min-height: 37px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 160, 150, 0.25);
+  border-radius: 10px;
+  background: transparent;
+  color: #ffb1a7;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* =========================================================
+   STATE
+========================================================= */
+
+.donor-notifications-state {
+  min-height: 330px;
+  padding: 40px 20px;
+  border: 1px solid #252525;
+  border-radius: 22px;
+  background: #101010;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.donor-notifications-state h2 {
+  margin: 17px 0 7px;
+  color: #eeeeee;
+  font-size: 22px;
+}
+
+.donor-notifications-state p {
+  margin: 0;
+  color: #808080;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.donor-notifications-empty-icon {
+  width: 67px;
+  height: 67px;
+  border-radius: 20px;
+  background: rgba(242, 196, 94, 0.08);
+  color: #f2c45e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================================================
+   LIST
+========================================================= */
+
+.donor-notifications-list {
+  border: 1px solid #252525;
+  border-radius: 23px;
+  background: #0e0e0e;
+  overflow: hidden;
+}
+
+.donor-notifications-list-header {
+  min-height: 82px;
+  padding: 17px 20px;
+  border-bottom: 1px solid #242424;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.donor-notifications-list-header > div > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #72849b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.donor-notifications-list-header h2 {
+  margin: 0;
+  color: #f1f1f1;
+  font-size: 22px;
+  font-weight: 780;
+}
+
+.donor-notifications-list-header > strong {
+  color: #777;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* =========================================================
+   NOTIFICATION ITEM
+========================================================= */
+
+.donor-notifications-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.donor-notification-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  padding: 19px 20px;
+  border-bottom: 1px solid #1f1f1f;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.donor-notification-item:last-child {
+  border-bottom: 0;
+}
+
+.donor-notification-item--unread {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(242, 196, 94, 0.045),
+      rgba(242, 196, 94, 0)
+    );
+}
+
+.donor-notification-item--read {
+  background: transparent;
+}
+
+.donor-notification-item:hover {
+  background: #151515;
+}
+
+.donor-notification-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donor-notification-icon--default {
+  background: rgba(242, 196, 94, 0.09);
+  color: #f2c45e;
+}
+
+.donor-notification-icon--delivery {
+  background: rgba(83, 194, 130, 0.1);
+  color: #65d88e;
+}
+
+.donor-notification-icon--ngo {
+  background: rgba(168, 127, 240, 0.1);
+  color: #b893f4;
+}
+
+.donor-notification-icon--volunteer {
+  background: rgba(93, 165, 238, 0.1);
+  color: #74b0ee;
+}
+
+.donor-notification-icon--alert {
+  background: rgba(236, 103, 103, 0.1);
+  color: #f18585;
+}
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.donor-notification-content {
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.donor-notification-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.donor-notification-title-row h3 {
+  margin: 0;
+  color: #f0f0f0;
+  font-size: 15px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.donor-notification-item--read
+  .donor-notification-title-row
+  h3 {
+  color: #c8c8c8;
+}
+
+.donor-notification-new {
+  min-height: 19px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(242, 196, 94, 0.12);
+  color: #e4bf62;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.7px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.donor-notification-content p {
+  margin: 7px 0 8px;
+  color: #8996a5;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.donor-notification-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #667487;
+  font-size: 11px;
+}
+
+.donor-notification-read {
+  padding-top: 8px;
+  width: 22px;
+  display: flex;
+  justify-content: center;
+}
+
+.donor-notification-read svg {
+  color: #5fd891;
+}
+
+.donor-notification-read > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f2c45e;
+  box-shadow: 0 0 0 4px rgba(242, 196, 94, 0.08);
+}
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+.donor-notification-spin {
+  animation: donor-notification-spin 0.8s linear infinite;
+}
+
+@keyframes donor-notification-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+  .donor-notifications-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .donor-notifications-summary-action {
+    grid-column: 1 / -1;
+  }
+
+  .donor-notifications-summary-action button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 680px) {
+  .donor-notifications-page {
+    padding: 25px 0 85px;
+  }
+
+  .donor-notifications-container {
+    width: calc(100% - 24px);
+  }
+
+  .donor-notifications-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 17px;
+  }
+
+  .donor-notifications-hero h1 {
+    font-size: 39px;
+  }
+
+  .donor-notifications-hero p {
+    font-size: 15px;
+  }
+
+  .donor-notifications-refresh {
+    width: 100%;
+  }
+
+  .donor-notifications-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 11px;
+  }
+
+  .donor-notifications-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .donor-notifications-summary-action {
+    grid-column: auto;
+  }
+
+  .donor-notifications-filter {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .donor-notifications-filter-btn {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  .donor-notifications-list-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .donor-notification-item {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 11px;
+    padding: 16px 14px;
+  }
+
+  .donor-notification-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .donor-notification-title-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 430px) {
+  .donor-notifications-hero h1 {
+    font-size: 34px;
+  }
+
+  .donor-notification-item {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .donor-notification-read {
+    display: none;
+  }
+
+  .donor-notification-content p {
+    font-size: 12px;
+  }
+
+  .donor-notification-title-row h3 {
+    font-size: 14px;
+  }
+}

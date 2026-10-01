@@ -1,0 +1,185 @@
+/* =========================================================
+   MEALBRIDGE MAP
+   ========================================================= */
+
+.mapview {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #e8eaec;
+}
+
+.mapview .leaflet-container {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+}
+
+/* Custom markers */
+.mapview__custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Zoom controls */
+.mapview .leaflet-control-zoom {
+  border: 0 !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22) !important;
+}
+
+.mapview .leaflet-control-zoom a {
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  background: #111 !important;
+  color: #f2c45e !important;
+  border-color: #333 !important;
+  font-weight: 700;
+}
+
+.mapview .leaflet-control-zoom a:hover {
+  background: #1d1d1d !important;
+}
+
+/* Map attribution */
+.mapview .leaflet-control-attribution {
+  background: rgba(8, 8, 8, 0.82) !important;
+  color: #b8b8b8 !important;
+  font-size: 9px !important;
+}
+
+.mapview .leaflet-control-attribution a {
+  color: #f2c45e !important;
+}
+
+/* Popup */
+.mapview__popup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.mapview__popup strong {
+  color: #202020;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mapview__popup span {
+  color: #5c6470;
+  font-size: 11px;
+}
+
+.mapview__popup-tag {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534 !important;
+  font-size: 9px !important;
+  font-weight: 800;
+}
+
+/* Popup button */
+.mapview__popup-btn {
+  margin-top: 4px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: #151515;
+  color: #f2c45e;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.mapview__popup-btn:hover {
+  background: #2a2a2a;
+}
+
+.mapview__popup-btn--accent {
+  background: #f2c45e;
+  color: #111;
+}
+
+.mapview__popup-btn--accent:hover {
+  background: #e7b84d;
+}
+
+/* Recenter button */
+.mapview__recenter-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 1000;
+
+  width: 40px;
+  height: 40px;
+
+  border: 1px solid #333;
+  border-radius: 11px;
+
+  background: #111;
+  color: #f2c45e;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.mapview__recenter-btn:hover {
+  background: #1d1d1d;
+  transform: translateY(-2px);
+}
+
+.mapview__recenter-btn:active {
+  transform: translateY(0);
+}
+
+/* Leaflet popup styling */
+.mapview .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.mapview .leaflet-popup-content {
+  margin: 12px;
+}
+
+.mapview .leaflet-popup-tip {
+  box-shadow: none;
+}
+
+/* Remove focus outline from map controls */
+.mapview .leaflet-control a:focus {
+  outline: none;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .mapview .leaflet-control-zoom a {
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+  }
+
+  .mapview__recenter-btn {
+    right: 10px;
+    bottom: 10px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .mapview__popup {
+    min-width: 130px;
+  }
+}
