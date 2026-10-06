@@ -227,27 +227,28 @@ export default function AssignmentCard({
   // DONATION DATA
   // ==========================================================
 
-  const foodName = donation
-    ? getDonationName(donation)
-    : loading
-      ? 'Loading food...'
-      : 'Food Donation';
+  const foodName =
+    assignment.food_name ||
+    assignment.foodName ||
+    (donation ? getDonationName(donation) : (loading ? 'Loading food...' : 'Food Donation'));
 
-  const foodType = donation
-    ? getDonationType(donation)
-    : '';
+  const foodType =
+    assignment.food_type ||
+    assignment.foodType ||
+    (donation ? getDonationType(donation) : '');
 
-  const quantity = donation
-    ? getDonationQuantity(donation)
-    : null;
+  const quantity =
+    assignment.quantity ??
+    (donation ? getDonationQuantity(donation) : null);
 
-  const unit = donation
-    ? getDonationUnit(donation)
-    : '';
+  const unit =
+    assignment.unit ||
+    (donation ? getDonationUnit(donation) : '');
 
-  const donor = donation
-    ? getDonorName(donation)
-    : 'Donor';
+  const donor =
+    assignment.donor_name ||
+    assignment.donorName ||
+    (donation ? getDonorName(donation) : 'Donor');
 
 
   // IMPORTANT:
@@ -499,7 +500,7 @@ export default function AssignmentCard({
 
         <div className="assignment-card__actions">
 
-          {status === 'PENDING' &&
+          {['PENDING', 'REQUESTED'].includes(status) &&
             onAccept && (
 
               <Button
@@ -515,7 +516,7 @@ export default function AssignmentCard({
             )}
 
 
-          {status !== 'PENDING' &&
+          {!['PENDING', 'REQUESTED'].includes(status) &&
             onViewDetails && (
 
               <Button

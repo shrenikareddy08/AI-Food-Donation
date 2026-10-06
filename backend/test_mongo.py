@@ -10,4 +10,5 @@ async def test_connection():
     await client.close()
 
 
-asyncio.run(test_connection())
+if __name__ == "__main__":
+    asyncio.run(test_connection())

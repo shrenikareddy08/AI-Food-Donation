@@ -71,6 +71,21 @@ function normalizeDonation(item) {
         'POSTED'
       ).toUpperCase(),
 
+    matchedNgoName:
+      item.matched_ngo_name ??
+      item.matchedNgoName ??
+      null,
+
+    assignedVolunteerName:
+      item.assigned_volunteer_name ??
+      item.assignedVolunteerName ??
+      null,
+
+    assignedVolunteerPhone:
+      item.assigned_volunteer_phone ??
+      item.assignedVolunteerPhone ??
+      null,
+
     createdAt:
       item.created_at ??
       item.createdAt ??
@@ -98,21 +113,22 @@ function normalizeDonation(item) {
 }
 
 
-function getStatusLabel(status) {
-  const labels = {
-    POSTED: 'Posted',
-    MATCHED: 'Matched',
-    ACCEPTED: 'Accepted',
-    PICKED_UP: 'Picked Up',
-    IN_TRANSIT: 'In Transit',
-    DELIVERED: 'Delivered',
-    CANCELLED: 'Cancelled',
-  };
+function getStatusLabel(status, item) {
+  if (status === 'POSTED') return 'Looking for NGO';
+  if (status === 'MATCHED') {
+    return item?.matchedNgoName ? `Accepted by ${item.matchedNgoName}` : 'Accepted by NGO';
+  }
+  if (['ASSIGNED', 'PICKUP_IN_PROGRESS', 'ACCEPTED'].includes(status)) {
+    return item?.assignedVolunteerName ? `Volunteer Assigned: ${item.assignedVolunteerName}` : 'Volunteer Assigned';
+  }
+  if (status === 'PICKED_UP') return 'Picked Up by Volunteer';
+  if (status === 'IN_TRANSIT') {
+    return item?.matchedNgoName ? `On the way to ${item.matchedNgoName}` : 'In Transit';
+  }
+  if (['DELIVERED', 'COMPLETED'].includes(status)) return 'Delivered Successfully';
+  if (status === 'CANCELLED') return 'Cancelled';
 
-  return (
-    labels[status] ||
-    status.replaceAll('_', ' ')
-  );
+  return status.replaceAll('_', ' ');
 }
 
 
@@ -692,7 +708,8 @@ export default function DonorDashboard() {
                           }
                         >
                           {getStatusLabel(
-                            donation.status
+                            donation.status,
+                            donation
                           )}
                         </span>
 

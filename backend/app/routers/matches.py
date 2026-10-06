@@ -10,6 +10,8 @@ from app.db.postgres import get_session
 from app.models.match import Match
 from app.models.donation import Donation
 from app.models.ngo import NGO
+from app.models.assignment import Assignment
+from app.models.volunteer import Volunteer
 
 from app.schemas.match import (
     MatchCreate,
@@ -553,13 +555,58 @@ async def update_match_status(
 
         donation.status = "MATCHED"
 
+        # Check if an assignment already exists for this donation
+        existing_assign = await session.execute(
+            select(Assignment).where(
+                Assignment.donation_id == donation.donation_id,
+                Assignment.status.notin_(["CANCELLED"])
+            )
+        )
+        if not existing_assign.scalar_one_or_none():
+            new_assignment = Assignment(
+                donation_id=donation.donation_id,
+                ngo_id=ngo.ngo_id,
+                volunteer_id=None,
+                pickup_location=donation.location or "Donor Location",
+                delivery_location=ngo.address or "NGO Center",
+                status="REQUESTED"
+            )
+            session.add(new_assignment)
+            await session.flush()
+
+            # Broadcast delivery request to available volunteers
+            vol_res = await session.execute(
+                select(Volunteer).where(Volunteer.availability == "AVAILABLE")
+            )
+            volunteers = vol_res.scalars().all()
+            for v in volunteers:
+                await create_notification(
+                    session=session,
+                    user_id=v.user_id,
+                    message=(
+                        f"New delivery request available: Pickup '{donation.food_name}' "
+                        f"({donation.quantity} {donation.unit or 'kg'}) from {donation.location or 'donor'} "
+                        f"to {ngo.organization_name}."
+                    ),
+                    notification_type="NEW_DELIVERY_REQUEST"
+                )
+
         await create_notification(
             session=session,
             user_id=donation.donor_id,
             message=(
-                f"Your donation #{donation.donation_id} "
-                f"was accepted by "
-                f"{ngo.organization_name}."
+                f"Your donation #{donation.donation_id} ('{donation.food_name}') "
+                f"was accepted by {ngo.organization_name}. A volunteer delivery request has been created."
+            ),
+            notification_type="MATCH_ACCEPTED"
+        )
+
+        await create_notification(
+            session=session,
+            user_id=current_user["user_id"],
+            message=(
+                f"You accepted donation #{donation.donation_id} ('{donation.food_name}'). "
+                f"Delivery request broadcast to available volunteers."
             ),
             notification_type="MATCH_ACCEPTED"
         )
@@ -573,7 +620,7 @@ async def update_match_status(
             details=(
                 f"NGO #{ngo.ngo_id} accepted match "
                 f"#{match.match_id} for donation "
-                f"#{donation.donation_id}"
+                f"#{donation.donation_id}. Created delivery assignment."
             )
         )
 
@@ -613,4 +660,134 @@ async def update_match_status(
 
     await session.refresh(match)
 
+    return match
+
+
+# =========================================================
+# CLAIM / DIRECT ACCEPT DONATION BY NGO
+# =========================================================
+
+@router.post(
+    "/claim/{donation_id}",
+    response_model=MatchResponse
+)
+async def claim_donation_by_ngo(
+    donation_id: int,
+    current_user: dict = Depends(require_role("NGO")),
+    session: AsyncSession = Depends(get_session)
+):
+    ngo_result = await session.execute(
+        select(NGO).where(NGO.user_id == current_user["user_id"])
+    )
+    ngo = ngo_result.scalar_one_or_none()
+    if not ngo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="NGO profile not found"
+        )
+
+    donation_result = await session.execute(
+        select(Donation).where(Donation.donation_id == donation_id)
+    )
+    donation = donation_result.scalar_one_or_none()
+    if not donation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Donation not found"
+        )
+
+    if donation.status != "POSTED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Donation is no longer available"
+        )
+
+    # Find or create match
+    match_result = await session.execute(
+        select(Match).where(
+            Match.donation_id == donation_id,
+            Match.ngo_id == ngo.ngo_id
+        )
+    )
+    match = match_result.scalar_one_or_none()
+
+    if not match:
+        scores = calculate_match_scores(donation, ngo)
+        match = Match(
+            donation_id=donation.donation_id,
+            ngo_id=ngo.ngo_id,
+            location_score=scores["location_score"],
+            quantity_score=scores["quantity_score"],
+            expiry_score=scores["expiry_score"],
+            capacity_score=scores["capacity_score"],
+            requirement_score=scores["requirement_score"],
+            total_score=scores["total_score"],
+            status="ACCEPTED",
+            matched_at=datetime.now()
+        )
+        session.add(match)
+        await session.flush()
+    else:
+        match.status = "ACCEPTED"
+        match.matched_at = datetime.now()
+
+    donation.status = "MATCHED"
+
+    # Create delivery assignment
+    existing_assign = await session.execute(
+        select(Assignment).where(
+            Assignment.donation_id == donation.donation_id,
+            Assignment.status.notin_(["CANCELLED"])
+        )
+    )
+    if not existing_assign.scalar_one_or_none():
+        new_assignment = Assignment(
+            donation_id=donation.donation_id,
+            ngo_id=ngo.ngo_id,
+            volunteer_id=None,
+            pickup_location=donation.location or "Donor Location",
+            delivery_location=ngo.address or "NGO Center",
+            status="REQUESTED"
+        )
+        session.add(new_assignment)
+        await session.flush()
+
+        # Broadcast to volunteers
+        vol_res = await session.execute(
+            select(Volunteer).where(Volunteer.availability == "AVAILABLE")
+        )
+        volunteers = vol_res.scalars().all()
+        for v in volunteers:
+            await create_notification(
+                session=session,
+                user_id=v.user_id,
+                message=(
+                    f"New delivery request available: Pickup '{donation.food_name}' "
+                    f"({donation.quantity} {donation.unit or 'kg'}) from {donation.location or 'donor'} "
+                    f"to {ngo.organization_name}."
+                ),
+                notification_type="NEW_DELIVERY_REQUEST"
+            )
+
+    await create_notification(
+        session=session,
+        user_id=donation.donor_id,
+        message=(
+            f"Your donation #{donation.donation_id} ('{donation.food_name}') "
+            f"was accepted by {ngo.organization_name}. A volunteer delivery request has been created."
+        ),
+        notification_type="MATCH_ACCEPTED"
+    )
+
+    await create_audit_log(
+        session=session,
+        user_id=current_user["user_id"],
+        action="MATCH_ACCEPTED",
+        entity_type="MATCH",
+        entity_id=match.match_id,
+        details=f"NGO #{ngo.ngo_id} claimed donation #{donation.donation_id} directly. Created delivery request."
+    )
+
+    await session.commit()
+    await session.refresh(match)
     return match

@@ -18,12 +18,19 @@ export const DONATION_STATUSES = [
 ];
 
 export const STATUS_CONFIG = {
+  AVAILABLE: { label: 'Available', color: 'success', icon: 'Sparkles' },
   POSTED: { label: 'Posted', color: 'neutral', icon: 'Clock' },
+  PENDING: { label: 'Pending', color: 'warning', icon: 'Clock' },
+  REQUESTED: { label: 'Waiting for Volunteer', color: 'warning', icon: 'Clock' },
+  ACCEPTED: { label: 'Accepted', color: 'info', icon: 'UserCheck' },
   MATCHED: { label: 'Matched', color: 'info', icon: 'Handshake' },
   ASSIGNED: { label: 'Assigned', color: 'info', icon: 'UserCheck' },
+  PICKUP_IN_PROGRESS: { label: 'Pickup In Progress', color: 'info', icon: 'Truck' },
   PICKED_UP: { label: 'Picked Up', color: 'info', icon: 'PackageCheck' },
   IN_TRANSIT: { label: 'In Transit', color: 'info', icon: 'Truck' },
   DELIVERED: { label: 'Delivered', color: 'success', icon: 'CheckCircle2' },
+  COMPLETED: { label: 'Completed', color: 'success', icon: 'CheckCircle2' },
+  CANCELLED: { label: 'Cancelled', color: 'danger', icon: 'XCircle' },
 };
 
 export const USER_ROLES = {

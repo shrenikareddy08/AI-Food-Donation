@@ -27,4 +27,5 @@ async def test_delivery_confirmation_model():
             )
 
 
-asyncio.run(test_delivery_confirmation_model())
+if __name__ == \"__main__\":
+    asyncio.run(test_delivery_confirmation_model())

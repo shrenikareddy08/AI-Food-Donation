@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -8,26 +9,77 @@ import {
   Navigation,
   Clock,
   CheckCircle,
+  Loader2,
+  Phone,
 } from 'lucide-react';
 
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import StatusBadge from '../../components/StatusBadge';
 import MapView from '../../components/MapView';
-
-import { MOCK_ASSIGNMENTS } from '../../utils/mockData';
+import { apiClient } from '../../services/apiClient';
 
 export default function AssignmentDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
-  const assignment = MOCK_ASSIGNMENTS.find(
-    (item) => String(item.id) === String(id)
-  );
+  const [assignment, setAssignment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
-  /*
-   * Assignment not found
-   */
-  if (!assignment) {
+  const loadAssignment = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await apiClient.get(`/api/assignments/${id}`);
+      setAssignment(data);
+    } catch (err) {
+      console.error('Failed to load assignment:', err);
+      setError(err?.message || 'Assignment not found');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAssignment();
+  }, [id]);
+
+  const handleAccept = async () => {
+    try {
+      setActionLoading(true);
+      await apiClient.post(`/api/assignments/${id}/accept`);
+      await loadAssignment();
+    } catch (err) {
+      console.error('Failed to accept assignment:', err);
+      alert(err?.message || 'Could not accept assignment');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        className="container"
+        style={{
+          minHeight: '400px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'var(--space-3)',
+          paddingTop: 'var(--space-8)',
+        }}
+      >
+        <Loader2 size={32} className="animate-spin" />
+        <p style={{ color: 'var(--color-text-secondary)' }}>Loading assignment #{id}...</p>
+      </div>
+    );
+  }
+
+  if (error || !assignment) {
     return (
       <div
         style={{
@@ -51,11 +103,7 @@ export default function AssignmentDetails() {
               }}
             />
 
-            <h2
-              style={{
-                marginBottom: 'var(--space-2)',
-              }}
-            >
+            <h2 style={{ marginBottom: 'var(--space-2)' }}>
               Assignment not found
             </h2>
 
@@ -65,7 +113,7 @@ export default function AssignmentDetails() {
                 marginBottom: 'var(--space-5)',
               }}
             >
-              The requested assignment could not be found.
+              {error || 'The requested assignment could not be found.'}
             </p>
 
             <div
@@ -80,10 +128,7 @@ export default function AssignmentDetails() {
                 type="button"
                 variant="outline"
                 leftIcon={ArrowLeft}
-                onClick={() => {
-                  window.location.href =
-                    '/volunteer/assignments';
-                }}
+                onClick={() => navigate('/volunteer/assignments')}
               >
                 Back to Assignments
               </Button>
@@ -92,10 +137,7 @@ export default function AssignmentDetails() {
                 type="button"
                 variant="primary"
                 leftIcon={LayoutDashboard}
-                onClick={() => {
-                  window.location.href =
-                    '/volunteer/dashboard';
-                }}
+                onClick={() => navigate('/volunteer/dashboard')}
               >
                 Dashboard
               </Button>
@@ -106,54 +148,48 @@ export default function AssignmentDetails() {
     );
   }
 
-  const pickup = assignment.pickup || {};
-  const destination = assignment.destination || {};
+  const assignmentId = assignment.assignment_id || assignment.id || id;
+  const foodName = assignment.food_name || assignment.foodName || 'Food Donation';
+  const foodType = assignment.food_type || assignment.foodType || 'Prepared Meals';
+  const quantity = assignment.quantity ?? null;
+  const unit = assignment.unit || 'servings';
+  const status = String(assignment.status || 'PENDING').toUpperCase();
 
-  const pickupPosition =
-    pickup.latitude !== undefined &&
-    pickup.longitude !== undefined
-      ? {
-          latitude: pickup.latitude,
-          longitude: pickup.longitude,
-        }
-      : null;
+  const donorName = assignment.donor_name || assignment.donor || 'Food Donor';
+  const donorPhone = assignment.donor_phone || assignment.donorPhone || 'Not specified';
+  const pickupLocation = assignment.pickup_location || 'Donor Location';
 
-  const destinationPosition =
-    destination.latitude !== undefined &&
-    destination.longitude !== undefined
-      ? {
-          latitude: destination.latitude,
-          longitude: destination.longitude,
-        }
-      : null;
+  const ngoName = assignment.ngo_name || assignment.ngo || 'Partner Organization';
+  const ngoPhone = assignment.ngo_phone || assignment.ngoPhone || 'Not specified';
+  const deliveryLocation = assignment.delivery_location || 'NGO Facility';
 
-  const mapMarkers = [];
+  const pickupTimeStr = assignment.pickup_time
+    ? new Date(assignment.pickup_time).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : 'Immediate / As scheduled';
 
-  if (pickupPosition) {
-    mapMarkers.push({
+  // Default coordinate anchors for Hyderabad if coordinates not provided
+  const pickupPosition = { latitude: 17.4485, longitude: 78.3748 };
+  const destinationPosition = { latitude: 17.4375, longitude: 78.4482 };
+
+  const mapMarkers = [
+    {
       id: 'pickup',
       latitude: pickupPosition.latitude,
       longitude: pickupPosition.longitude,
-      label: `Pickup - ${
-        pickup.label ||
-        assignment.pickupArea ||
-        'Pickup'
-      }`,
-    });
-  }
-
-  if (destinationPosition) {
-    mapMarkers.push({
+      label: `Pickup - ${pickupLocation}`,
+    },
+    {
       id: 'destination',
       latitude: destinationPosition.latitude,
       longitude: destinationPosition.longitude,
-      label: `Destination - ${
-        destination.label ||
-        assignment.destinationArea ||
-        'Destination'
-      }`,
-    });
-  }
+      label: `Destination - ${deliveryLocation}`,
+    },
+  ];
 
   return (
     <div
@@ -174,13 +210,9 @@ export default function AssignmentDetails() {
           flexWrap: 'wrap',
         }}
       >
-        {/* Back to Assignments */}
         <button
           type="button"
-          onClick={() => {
-            window.location.href =
-              '/volunteer/assignments';
-          }}
+          onClick={() => navigate('/volunteer/assignments')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -198,26 +230,18 @@ export default function AssignmentDetails() {
           Back to Assignments
         </button>
 
-        {/* Dashboard */}
         <Button
           type="button"
           variant="outline"
           leftIcon={LayoutDashboard}
-          onClick={() => {
-            window.location.href =
-              '/volunteer/dashboard';
-          }}
+          onClick={() => navigate('/volunteer/dashboard')}
         >
           Dashboard
         </Button>
       </div>
 
       {/* Page heading */}
-      <div
-        style={{
-          marginBottom: 'var(--space-6)',
-        }}
-      >
+      <div style={{ marginBottom: 'var(--space-6)' }}>
         <div
           style={{
             display: 'flex',
@@ -235,38 +259,27 @@ export default function AssignmentDetails() {
                 marginBottom: 'var(--space-1)',
               }}
             >
-              Assignment #{assignment.id}
+              Assignment #{assignmentId}
             </p>
 
-            <h1
-              style={{
-                margin: 0,
-                marginBottom: 'var(--space-2)',
-              }}
-            >
-              {assignment.foodName}
+            <h1 style={{ margin: 0, marginBottom: 'var(--space-2)' }}>
+              {foodName}
             </h1>
 
-            <p
-              style={{
-                color: 'var(--color-text-secondary)',
-                margin: 0,
-              }}
-            >
-              Food pickup and delivery assignment
+            <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>
+              Food pickup and redistribution delivery
             </p>
           </div>
 
-          <StatusBadge status={assignment.status} />
+          <StatusBadge status={status} />
         </div>
       </div>
 
-      {/* Main content */}
+      {/* Main content grid */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns:
-            'minmax(0, 1.5fr) minmax(300px, 1fr)',
+          gridTemplateColumns: 'minmax(0, 1.5fr) minmax(300px, 1fr)',
           gap: 'var(--space-5)',
         }}
       >
@@ -280,25 +293,15 @@ export default function AssignmentDetails() {
         >
           {/* Food Details */}
           <Card>
-            <div
-              style={{
-                padding: 'var(--space-5)',
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom: 'var(--space-4)',
-                }}
-              >
+            <div style={{ padding: 'var(--space-5)' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
                 Food Details
               </h2>
 
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns:
-                    'repeat(auto-fit, minmax(180px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                   gap: 'var(--space-4)',
                 }}
               >
@@ -310,17 +313,9 @@ export default function AssignmentDetails() {
                       marginBottom: '4px',
                     }}
                   >
-                    Food
+                    Food Item
                   </p>
-
-                  <p
-                    style={{
-                      fontWeight: 600,
-                      margin: 0,
-                    }}
-                  >
-                    {assignment.foodName}
-                  </p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{foodName}</p>
                 </div>
 
                 <div>
@@ -331,17 +326,9 @@ export default function AssignmentDetails() {
                       marginBottom: '4px',
                     }}
                   >
-                    Type
+                    Category
                   </p>
-
-                  <p
-                    style={{
-                      fontWeight: 600,
-                      margin: 0,
-                    }}
-                  >
-                    {assignment.foodType}
-                  </p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{foodType}</p>
                 </div>
 
                 <div>
@@ -354,14 +341,8 @@ export default function AssignmentDetails() {
                   >
                     Quantity
                   </p>
-
-                  <p
-                    style={{
-                      fontWeight: 600,
-                      margin: 0,
-                    }}
-                  >
-                    {assignment.quantity} {assignment.unit}
+                  <p style={{ fontWeight: 600, margin: 0 }}>
+                    {quantity !== null ? `${quantity} ${unit}` : 'Standard portion'}
                   </p>
                 </div>
 
@@ -373,17 +354,9 @@ export default function AssignmentDetails() {
                       marginBottom: '4px',
                     }}
                   >
-                    Pickup Time
+                    Pickup Scheduled
                   </p>
-
-                  <p
-                    style={{
-                      fontWeight: 600,
-                      margin: 0,
-                    }}
-                  >
-                    {assignment.pickupTime}
-                  </p>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{pickupTimeStr}</p>
                 </div>
               </div>
             </div>
@@ -391,18 +364,9 @@ export default function AssignmentDetails() {
 
           {/* Donor Details */}
           <Card>
-            <div
-              style={{
-                padding: 'var(--space-5)',
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom: 'var(--space-4)',
-                }}
-              >
-                Donor Details
+            <div style={{ padding: 'var(--space-5)' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
+                Donor Information
               </h2>
 
               <div
@@ -420,31 +384,25 @@ export default function AssignmentDetails() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background:
-                      'var(--color-surface-secondary)',
+                    background: 'var(--color-surface-secondary)',
                   }}
                 >
                   <User size={22} />
                 </div>
 
                 <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {assignment.donor}
-                  </p>
-
+                  <p style={{ margin: 0, fontWeight: 600 }}>{donorName}</p>
                   <p
                     style={{
                       margin: 0,
                       color: 'var(--color-text-secondary)',
                       fontSize: 'var(--text-sm)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
                     }}
                   >
-                    {assignment.donorPhone}
+                    <Phone size={14} /> {donorPhone}
                   </p>
                 </div>
               </div>
@@ -453,17 +411,8 @@ export default function AssignmentDetails() {
 
           {/* Route Details */}
           <Card>
-            <div
-              style={{
-                padding: 'var(--space-5)',
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom: 'var(--space-4)',
-                }}
-              >
+            <div style={{ padding: 'var(--space-5)' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
                 Route Details
               </h2>
 
@@ -475,101 +424,24 @@ export default function AssignmentDetails() {
                 }}
               >
                 {/* Pickup */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 'var(--space-3)',
-                  }}
-                >
-                  <MapPin size={22} />
-
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <MapPin size={22} style={{ color: 'var(--color-primary-500)', flexShrink: 0 }} />
                   <div>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Pickup
-                    </p>
-
-                    <p
-                      style={{
-                        margin: 0,
-                        color:
-                          'var(--color-text-secondary)',
-                      }}
-                    >
-                      {assignment.pickupArea},{' '}
-                      {assignment.pickupCity}
+                    <p style={{ margin: 0, fontWeight: 600 }}>Pickup Location</p>
+                    <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+                      {pickupLocation}
                     </p>
                   </div>
                 </div>
 
                 {/* Destination */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 'var(--space-3)',
-                  }}
-                >
-                  <Navigation size={22} />
-
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <Navigation size={22} style={{ color: 'var(--color-accent-500)', flexShrink: 0 }} />
                   <div>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Destination
+                    <p style={{ margin: 0, fontWeight: 600 }}>Destination NGO</p>
+                    <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+                      {deliveryLocation}
                     </p>
-
-                    <p
-                      style={{
-                        margin: 0,
-                        color:
-                          'var(--color-text-secondary)',
-                      }}
-                    >
-                      {assignment.destinationArea},{' '}
-                      {assignment.destinationCity}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Distance / ETA */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 'var(--space-5)',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-2)',
-                    }}
-                  >
-                    <Navigation size={18} />
-                    <span>
-                      {assignment.distanceKm} km
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-2)',
-                    }}
-                  >
-                    <Clock size={18} />
-                    <span>
-                      {assignment.etaMinutes} min ETA
-                    </span>
                   </div>
                 </div>
               </div>
@@ -578,51 +450,25 @@ export default function AssignmentDetails() {
 
           {/* Map */}
           <Card>
-            <div
-              style={{
-                padding: 'var(--space-5)',
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom: 'var(--space-4)',
-                }}
-              >
+            <div style={{ padding: 'var(--space-5)' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
                 Route Map
               </h2>
 
-              {pickupPosition ||
-              destinationPosition ? (
-                <div
-                  style={{
-                    minHeight: '350px',
-                    borderRadius:
-                      'var(--radius-lg)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <MapView
-                    pickupPosition={pickupPosition}
-                    destinationPosition={
-                      destinationPosition
-                    }
-                    markers={mapMarkers}
-                  />
-                </div>
-              ) : (
-                <div
-                  style={{
-                    padding: 'var(--space-6)',
-                    textAlign: 'center',
-                    color:
-                      'var(--color-text-secondary)',
-                  }}
-                >
-                  Location information is not
-                  available.
-                </div>
-              )}
+              <div
+                style={{
+                  minHeight: '350px',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
+                }}
+              >
+                <MapView
+                  pickupPosition={pickupPosition}
+                  destinationPosition={destinationPosition}
+                  markers={mapMarkers}
+                  height="350px"
+                />
+              </div>
             </div>
           </Card>
         </div>
@@ -637,86 +483,45 @@ export default function AssignmentDetails() {
         >
           {/* NGO Details */}
           <Card>
-            <div
-              style={{
-                padding: 'var(--space-5)',
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom: 'var(--space-4)',
-                }}
-              >
+            <div style={{ padding: 'var(--space-5)' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
                 NGO Details
               </h2>
 
+              <p style={{ fontWeight: 600, marginBottom: 'var(--space-1)' }}>
+                {ngoName}
+              </p>
+
               <p
                 style={{
-                  fontWeight: 600,
-                  marginBottom: 'var(--space-1)',
+                  margin: 0,
+                  marginBottom: 'var(--space-2)',
+                  color: 'var(--color-text-secondary)',
                 }}
               >
-                {assignment.ngo}
+                {deliveryLocation}
               </p>
 
               <p
                 style={{
                   margin: 0,
                   color: 'var(--color-text-secondary)',
+                  fontSize: 'var(--text-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
               >
-                {assignment.ngoAddress}
+                <Phone size={14} /> {ngoPhone}
               </p>
             </div>
           </Card>
 
-          {/* Notes */}
-          {assignment.notes && (
-            <Card>
-              <div
-                style={{
-                  padding: 'var(--space-5)',
-                }}
-              >
-                <h2
-                  style={{
-                    marginTop: 0,
-                    marginBottom:
-                      'var(--space-3)',
-                  }}
-                >
-                  Notes
-                </h2>
-
-                <p
-                  style={{
-                    margin: 0,
-                    color:
-                      'var(--color-text-secondary)',
-                  }}
-                >
-                  {assignment.notes}
-                </p>
-              </div>
-            </Card>
-          )}
-
           {/* Actions */}
           <Card>
-            <div
-              style={{
-                padding: 'var(--space-5)',
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                  marginBottom:
-                    'var(--space-4)',
-                }}
-              >
-                Actions
+            <div style={{ padding: 'var(--space-5)' }}>
+              <h2 style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
+                Delivery Actions
               </h2>
 
               <div
@@ -726,50 +531,94 @@ export default function AssignmentDetails() {
                   gap: 'var(--space-3)',
                 }}
               >
-                <Link
-                  to={`/volunteer/pickup/${assignment.id}`}
-                  style={{
-                    textDecoration: 'none',
-                  }}
-                >
+                {/* If Waiting for volunteer */}
+                {['PENDING', 'REQUESTED'].includes(status) && (
                   <Button
                     variant="primary"
                     fullWidth
-                    leftIcon={CheckCircle}
+                    disabled={actionLoading}
+                    onClick={handleAccept}
                   >
-                    Pickup
+                    {actionLoading ? 'Claiming Request...' : 'Accept Delivery Request'}
                   </Button>
-                </Link>
+                )}
 
-                <Link
-                  to={`/volunteer/delivery/${assignment.id}`}
-                  style={{
-                    textDecoration: 'none',
-                  }}
-                >
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    leftIcon={Package}
+                {/* If Accepted or Assigned */}
+                {['ACCEPTED', 'ASSIGNED'].includes(status) && (
+                  <Link
+                    to={`/volunteer/pickup/${assignmentId}`}
+                    style={{ textDecoration: 'none' }}
                   >
-                    Delivery
-                  </Button>
-                </Link>
+                    <Button variant="primary" fullWidth leftIcon={CheckCircle}>
+                      Start Pickup
+                    </Button>
+                  </Link>
+                )}
 
-                <Link
-                  to={`/volunteer/tracking/${assignment.id}`}
-                  style={{
-                    textDecoration: 'none',
-                  }}
-                >
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    leftIcon={Navigation}
+                {/* If Pickup In Progress */}
+                {status === 'PICKUP_IN_PROGRESS' && (
+                  <Link
+                    to={`/volunteer/pickup/${assignmentId}`}
+                    style={{ textDecoration: 'none' }}
                   >
-                    Track Delivery
-                  </Button>
-                </Link>
+                    <Button variant="primary" fullWidth leftIcon={CheckCircle}>
+                      Complete Food Pickup
+                    </Button>
+                  </Link>
+                )}
+
+                {/* If Picked Up or In Transit */}
+                {['PICKED_UP', 'IN_TRANSIT'].includes(status) && (
+                  <>
+                    <Link
+                      to={`/volunteer/delivery/${assignmentId}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button variant="primary" fullWidth leftIcon={Package}>
+                        Proceed to Delivery
+                      </Button>
+                    </Link>
+
+                    <Link
+                      to={`/volunteer/tracking/${assignmentId}`}
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <Button variant="outline" fullWidth leftIcon={Navigation}>
+                        Track Delivery
+                      </Button>
+                    </Link>
+                  </>
+                )}
+
+                {/* If Delivered / Completed */}
+                {['DELIVERED', 'COMPLETED'].includes(status) && (
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: 'var(--space-4)',
+                      background: 'var(--color-success-50)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid var(--color-success-200)',
+                    }}
+                  >
+                    <CheckCircle
+                      size={28}
+                      style={{
+                        color: 'var(--color-success-500)',
+                        margin: '0 auto var(--space-2)',
+                      }}
+                    />
+                    <p
+                      style={{
+                        margin: 0,
+                        fontWeight: 600,
+                        color: 'var(--color-success-600)',
+                      }}
+                    >
+                      Delivery Completed Successfully!
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -784,20 +633,14 @@ export default function AssignmentDetails() {
           >
             <button
               type="button"
-              onClick={() => {
-                window.location.href =
-                  '/volunteer/assignments';
-              }}
+              onClick={() => navigate('/volunteer/assignments')}
               style={{
                 flex: 1,
-                minWidth: '150px',
+                minWidth: '140px',
                 padding: '12px 16px',
-                borderRadius:
-                  'var(--radius-md)',
-                border:
-                  '1px solid var(--color-border)',
-                background:
-                  'var(--color-surface)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
                 cursor: 'pointer',
                 fontWeight: 500,
               }}
@@ -807,20 +650,14 @@ export default function AssignmentDetails() {
 
             <button
               type="button"
-              onClick={() => {
-                window.location.href =
-                  '/volunteer/dashboard';
-              }}
+              onClick={() => navigate('/volunteer/dashboard')}
               style={{
                 flex: 1,
-                minWidth: '150px',
+                minWidth: '140px',
                 padding: '12px 16px',
-                borderRadius:
-                  'var(--radius-md)',
-                border:
-                  '1px solid var(--color-border)',
-                background:
-                  'var(--color-surface)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
                 cursor: 'pointer',
                 fontWeight: 500,
               }}

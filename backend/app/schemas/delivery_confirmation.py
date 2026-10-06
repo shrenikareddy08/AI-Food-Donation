@@ -4,7 +4,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 class DeliveryConfirmationCreate(BaseModel):
-    assignment_id: int
+    assignment_id: int | None = None
+    donation_id: int | None = None
+    ngo_id: int | None = None
+    volunteer_id: int | None = None
     verification_method: str | None = None
     remarks: str | None = None
 

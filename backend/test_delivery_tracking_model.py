@@ -28,4 +28,5 @@ async def test_delivery_tracking_model():
             )
 
 
-asyncio.run(test_delivery_tracking_model())
+if __name__ == \"__main__\":
+    asyncio.run(test_delivery_tracking_model())

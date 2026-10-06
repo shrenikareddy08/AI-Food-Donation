@@ -38,13 +38,48 @@ async def get_my_notifications(
         return result.scalars().all()
 
 
+@router.get("/unread-count")
+async def get_unread_count(
+    current_user: dict = Depends(get_current_user)
+):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Notification)
+            .where(
+                Notification.user_id == current_user["user_id"],
+                Notification.is_read.isnot(True)
+            )
+        )
+        unread = result.scalars().all()
+        return {"unread_count": len(unread)}
+
+
+@router.put("/mark-all-read")
+async def mark_all_read(
+    current_user: dict = Depends(get_current_user)
+):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Notification)
+            .where(
+                Notification.user_id == current_user["user_id"],
+                Notification.is_read.isnot(True)
+            )
+        )
+        notifications = result.scalars().all()
+        for n in notifications:
+            n.is_read = True
+        await session.commit()
+        return {"message": "All notifications marked as read", "count": len(notifications)}
+
+
 @router.put(
     "/{notification_id}/read",
     response_model=NotificationResponse
 )
 async def mark_notification_as_read(
     notification_id: int,
-    data: NotificationReadUpdate,
+    data: NotificationReadUpdate | None = None,
     current_user: dict = Depends(get_current_user)
 ):
     async with AsyncSessionLocal() as session:
@@ -69,7 +104,7 @@ async def mark_notification_as_read(
                 detail="You cannot modify this notification"
             )
 
-        notification.is_read = data.is_read
+        notification.is_read = data.is_read if data is not None else True
 
         await session.commit()
         await session.refresh(notification)

@@ -39,4 +39,5 @@ async def test_notification_service():
         print("Read:", saved_notification.is_read)
 
 
-asyncio.run(test_notification_service())
+if __name__ == \"__main__\":
+    asyncio.run(test_notification_service())

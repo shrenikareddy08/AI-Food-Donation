@@ -27,10 +27,10 @@ class Assignment(Base):
         nullable=False
     )
 
-    volunteer_id: Mapped[int] = mapped_column(
+    volunteer_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("volunteers.volunteer_id"),
-        nullable=False
+        nullable=True
     )
 
     pickup_location: Mapped[str | None] = mapped_column(

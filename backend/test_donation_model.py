@@ -26,4 +26,5 @@ async def test_donation_model():
             )
 
 
-asyncio.run(test_donation_model())
+if __name__ == \"__main__\":
+    asyncio.run(test_donation_model())

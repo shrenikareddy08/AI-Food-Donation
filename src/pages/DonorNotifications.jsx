@@ -341,22 +341,8 @@ export default function DonorNotifications() {
       return;
     }
 
-    /*
-      The backend currently provides a single-notification
-      read endpoint, so we mark each unread notification
-      individually.
-    */
-
     try {
-      await Promise.all(
-        unread
-          .filter((item) => item.id)
-          .map((item) =>
-            notificationService.markAsRead(
-              item.id
-            )
-          )
-      );
+      await notificationService.markAllAsRead();
 
       setNotifications(
         (current) =>
@@ -365,6 +351,8 @@ export default function DonorNotifications() {
             read: true,
           }))
       );
+
+      await loadNotifications(true);
 
     } catch (err) {
       console.error(

@@ -27,4 +27,5 @@ async def test_audit_log_model():
             )
 
 
-asyncio.run(test_audit_log_model())
+if __name__ == \"__main__\":
+    asyncio.run(test_audit_log_model())

@@ -21,4 +21,4 @@ class NotificationResponse(BaseModel):
 
 
 class NotificationReadUpdate(BaseModel):
-    is_read: bool
+    is_read: bool = True

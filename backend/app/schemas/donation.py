@@ -103,6 +103,13 @@ class DonationResponse(BaseModel):
 
     created_at: datetime | None = None
 
+    # Enriched tracking details for live donor/admin visibility
+    matched_ngo_name: str | None = None
+    match_status: str | None = None
+    assigned_volunteer_name: str | None = None
+    assigned_volunteer_phone: str | None = None
+    assignment_status: str | None = None
+
     model_config = ConfigDict(
         from_attributes=True
     )

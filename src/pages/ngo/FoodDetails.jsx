@@ -437,13 +437,6 @@ export default function FoodDetails() {
   ]);
 
   async function handleMatchAction(status) {
-    if (!match?.match_id) {
-      setError(
-        'No match request is available for this food.'
-      );
-      return;
-    }
-
     if (expired) {
       setError(
         'This food has expired and cannot be requested.'
@@ -455,12 +448,18 @@ export default function FoodDetails() {
       setActionLoading(true);
       setError('');
 
-      await apiClient.put(
-        `/api/matches/${match.match_id}/status`,
-        {
-          status,
-        }
-      );
+      if (match?.match_id) {
+        await apiClient.put(
+          `/api/matches/${match.match_id}/status`,
+          {
+            status,
+          }
+        );
+      } else if (status === 'ACCEPTED') {
+        await apiClient.post(
+          `/api/matches/claim/${id}`
+        );
+      }
 
       await loadFood();
     } catch (err) {
@@ -851,7 +850,7 @@ export default function FoodDetails() {
 
             {/* MATCH ACTIONS */}
 
-            {match && (
+            {(match || donation.status === 'POSTED') && (
               <div className="action-card">
 
                 <div className="section-title">
@@ -862,19 +861,37 @@ export default function FoodDetails() {
 
                 </div>
 
-                {matchStatus ===
-                  'ACCEPTED' &&
+                {(matchStatus === 'ACCEPTED' || ['MATCHED', 'ASSIGNED', 'PICKUP_IN_PROGRESS', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'].includes(donation.status)) &&
                   !expired && (
-                    <div className="accepted-message">
+                    <>
+                      <div className="accepted-message">
 
-                      <CheckCircle2 size={20} />
+                        <CheckCircle2 size={20} />
 
-                      <span>
-                        This food request has been
-                        accepted.
-                      </span>
+                        <span>
+                          This food request has been accepted. A volunteer delivery request is active!
+                        </span>
 
-                    </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        style={{
+                          marginTop: '12px',
+                          width: '100%',
+                          minHeight: '42px',
+                          borderRadius: '10px',
+                          border: '1px solid #22c55e',
+                          background: 'rgba(34,197,94,0.1)',
+                          color: '#4ade80',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                        }}
+                        onClick={() => navigate('/ngo/deliveries')}
+                      >
+                        View Active Deliveries
+                      </button>
+                    </>
                   )}
 
                 {matchStatus ===

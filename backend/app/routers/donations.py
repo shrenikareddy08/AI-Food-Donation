@@ -9,6 +9,10 @@ from app.db.postgres import get_session
 
 from app.models.donation import Donation
 from app.models.user import User
+from app.models.ngo import NGO
+from app.models.match import Match
+from app.models.assignment import Assignment
+from app.models.volunteer import Volunteer
 
 from app.schemas.donation import (
     DonationCreate,
@@ -17,6 +21,9 @@ from app.schemas.donation import (
 )
 
 from app.services.audit_service import create_audit_log
+from app.services.email_service import email_service
+from app.services.matching_service import calculate_match_scores
+from app.services.notification_service import create_notification
 
 
 router = APIRouter(
@@ -56,6 +63,40 @@ def to_database_datetime(
         )
 
     return value
+
+
+async def _enrich_donation_workflow(session: AsyncSession, donation: Donation):
+    try:
+        # 1. Query match details (prefer ACCEPTED, else latest)
+        match_res = await session.execute(
+            select(Match, NGO.organization_name)
+            .join(NGO, Match.ngo_id == NGO.ngo_id)
+            .where(Match.donation_id == donation.donation_id)
+            .order_by(Match.matched_at.desc())
+        )
+        matches = match_res.all()
+        accepted_match = next((m for m in matches if m[0].status == "ACCEPTED"), None)
+        selected_match = accepted_match or (matches[0] if matches else None)
+        if selected_match:
+            donation.matched_ngo_name = selected_match[1]
+            donation.match_status = selected_match[0].status
+
+        # 2. Query assignment details
+        assign_res = await session.execute(
+            select(Assignment, User.name, User.phone)
+            .outerjoin(Volunteer, Assignment.volunteer_id == Volunteer.volunteer_id)
+            .outerjoin(User, Volunteer.user_id == User.user_id)
+            .where(Assignment.donation_id == donation.donation_id)
+            .order_by(Assignment.assigned_at.desc())
+        )
+        assign_row = assign_res.first()
+        if assign_row:
+            assignment_obj, vol_name, vol_phone = assign_row
+            donation.assigned_volunteer_name = vol_name
+            donation.assigned_volunteer_phone = vol_phone
+            donation.assignment_status = assignment_obj.status
+    except Exception:
+        pass
 
 
 # =========================================================
@@ -117,6 +158,7 @@ async def get_donations(
 
         donation.donor_name = donor_name
         donation.donor_phone = donor_phone
+        await _enrich_donation_workflow(session, donation)
 
         donations.append(donation)
 
@@ -209,6 +251,56 @@ async def create_donation(
         )
     )
 
+    # -----------------------------------------------------
+    # AUTOMATIC NGO MATCHING & NOTIFICATION WORKFLOW
+    # -----------------------------------------------------
+    ngo_res = await session.execute(
+        select(NGO).where(NGO.verification_status == "VERIFIED")
+    )
+    verified_ngos = ngo_res.scalars().all()
+    matched_count = 0
+
+    for ngo in verified_ngos:
+        scores = calculate_match_scores(donation, ngo)
+        # Create match for relevant NGOs (e.g. score >= 10.0 or if fewer than 5 NGOs)
+        if scores["total_score"] >= 10.0 or len(verified_ngos) <= 3:
+            candidate_match = Match(
+                donation_id=donation.donation_id,
+                ngo_id=ngo.ngo_id,
+                location_score=scores["location_score"],
+                quantity_score=scores["quantity_score"],
+                expiry_score=scores["expiry_score"],
+                capacity_score=scores["capacity_score"],
+                requirement_score=scores["requirement_score"],
+                total_score=scores["total_score"],
+                status="PENDING",
+                matched_at=datetime.now()
+            )
+            session.add(candidate_match)
+            matched_count += 1
+
+            await create_notification(
+                session=session,
+                user_id=ngo.user_id,
+                message=(
+                    f"New donation match available: '{donation.food_name}' "
+                    f"({donation.quantity} {donation.unit or 'kg'}) in {donation.location or 'nearby'}. "
+                    f"Match score: {scores['total_score']}%. Please review and accept."
+                ),
+                notification_type="NEW_MATCH"
+            )
+
+    # Notify donor about matching broadcast
+    await create_notification(
+        session=session,
+        user_id=current_user["user_id"],
+        message=(
+            f"Your donation '{donation.food_name}' was registered and "
+            f"notified to {matched_count} verified NGO partners."
+        ),
+        notification_type="DONATION_CREATED"
+    )
+
     await session.commit()
 
     await session.refresh(
@@ -228,7 +320,16 @@ async def create_donation(
     if donor:
         donation.donor_name = donor.name
         donation.donor_phone = donor.phone
+        if donor.email:
+            await email_service.send_donation_created(
+                email=donor.email,
+                donor_name=donor.name,
+                food_name=donation.food_name,
+                quantity=str(donation.quantity),
+                unit=donation.unit or "units"
+            )
 
+    await _enrich_donation_workflow(session, donation)
     return donation
 
 
@@ -290,6 +391,7 @@ async def get_donation(
 
     donation.donor_name = donor_name
     donation.donor_phone = donor_phone
+    await _enrich_donation_workflow(session, donation)
 
     return donation
 

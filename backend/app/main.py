@@ -13,13 +13,20 @@ from app.routers import (
     delivery_tracking,
     notifications,
     admin,
-    audit_logs
+    audit_logs,
+    events,
+    semantic_search,
+    rag,
+    analytics_sql,
+    health,
+    activities
 )
 
 
 app = FastAPI(
-    title="MealBridge API",
-    version="0.1.0"
+    title="MealBridge AI API",
+    version="2.0.0",
+    description="Intelligent Food Donation & Redistribution Platform API"
 )
 
 
@@ -64,6 +71,12 @@ app.include_router(delivery_tracking.router)
 app.include_router(notifications.router)
 app.include_router(admin.router)
 app.include_router(audit_logs.router)
+app.include_router(events.router)
+app.include_router(semantic_search.router)
+app.include_router(rag.router)
+app.include_router(analytics_sql.router)
+app.include_router(health.router)
+app.include_router(activities.router)
 
 
 # =========================================================

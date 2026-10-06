@@ -34,4 +34,5 @@ async def test_otp():
     await client.close()
 
 
-asyncio.run(test_otp())
+if __name__ == \"__main__\":
+    asyncio.run(test_otp())

@@ -4,6 +4,20 @@ from pydantic import BaseModel, ConfigDict
 
 
 # =========================================================
+# VOLUNTEER CREATE
+# =========================================================
+
+class VolunteerCreate(BaseModel):
+    user_id: int
+    availability: str | None = "AVAILABLE"
+    vehicle_type: str | None = None
+    vehicle_number: str | None = None
+    current_location: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+
+
+# =========================================================
 # VOLUNTEER PROFILE UPDATE
 # =========================================================
 

@@ -14,8 +14,19 @@ export const notificationService = {
   // Mark one notification as read
   markAsRead: async (id) => {
     return apiClient.put(
-      `/api/notifications/${id}/read`
+      `/api/notifications/${id}/read`,
+      { is_read: true }
     );
+  },
+
+  // Get unread notification count
+  getUnreadCount: async () => {
+    return apiClient.get('/api/notifications/unread-count');
+  },
+
+  // Mark all notifications as read
+  markAllAsRead: async () => {
+    return apiClient.put('/api/notifications/mark-all-read');
   },
 };
 

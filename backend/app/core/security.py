@@ -1,20 +1,29 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from pwdlib import PasswordHash
 
 from app.core.config import settings
+try:
+    from pwdlib import PasswordHash
+    password_hash = PasswordHash.recommended()
 
+    def hash_password(password: str) -> str:
+        return password_hash.hash(password)
 
-password_hash = PasswordHash.recommended()
+    def verify_password(password: str, hashed_password: str) -> bool:
+        return password_hash.verify(password, hashed_password)
+except ImportError:
+    from argon2 import PasswordHasher
+    _ph = PasswordHasher()
 
+    def hash_password(password: str) -> str:
+        return _ph.hash(password)
 
-def hash_password(password: str) -> str:
-    return password_hash.hash(password)
-
-
-def verify_password(password: str, hashed_password: str) -> bool:
-    return password_hash.verify(password, hashed_password)
+    def verify_password(password: str, hashed_password: str) -> bool:
+        try:
+            return _ph.verify(hashed_password, password)
+        except Exception:
+            return False
 
 
 def create_access_token(user_id: int, role: str) -> str:

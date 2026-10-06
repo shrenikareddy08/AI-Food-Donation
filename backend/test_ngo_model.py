@@ -26,4 +26,5 @@ async def test_ngo_model():
             )
 
 
-asyncio.run(test_ngo_model())
+if __name__ == \"__main__\":
+    asyncio.run(test_ngo_model())

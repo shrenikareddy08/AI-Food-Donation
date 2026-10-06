@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 
+from app.core.rate_limiter import login_rate_limiter, otp_rate_limiter
 from app.core.security import (
     create_access_token,
     hash_password,
@@ -18,6 +19,7 @@ from app.schemas.auth import (
     RegisterRequest,
 )
 from app.schemas.user import UserResponse
+from app.services.email_service import email_service
 from app.services.otp_service import create_otp, verify_otp
 
 
@@ -35,7 +37,9 @@ ALLOWED_REGISTRATION_ROLES = {
 
 
 @router.post("/request-otp")
-async def request_otp(data: OTPRequest):
+async def request_otp(data: OTPRequest, request: Request):
+    otp_rate_limiter.check(request, data.email)
+
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(User).where(User.email == data.email)
@@ -54,8 +58,15 @@ async def request_otp(data: OTPRequest):
         purpose=data.purpose,
     )
 
+    # Dispatches email notification to user
+    await email_service.send_otp_email(
+        email=data.email,
+        otp=otp,
+        purpose=data.purpose,
+    )
+
     return {
-        "message": "OTP generated successfully",
+        "message": "OTP generated and sent to email successfully",
         "email": data.email,
         "purpose": data.purpose,
         "development_otp": otp,
@@ -63,7 +74,9 @@ async def request_otp(data: OTPRequest):
 
 
 @router.post("/verify-otp")
-async def verify_otp_endpoint(data: OTPVerifyRequest):
+async def verify_otp_endpoint(data: OTPVerifyRequest, request: Request):
+    otp_rate_limiter.check(request, data.email)
+
     verified = await verify_otp(
         email=data.email,
         otp=data.otp,
@@ -156,7 +169,10 @@ async def login(
         OAuth2PasswordRequestForm,
         Depends(),
     ],
+    request: Request,
 ):
+    login_rate_limiter.check(request, form_data.username)
+
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(User).where(

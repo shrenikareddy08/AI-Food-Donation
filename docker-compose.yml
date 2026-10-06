@@ -1,0 +1,141 @@
+services:
+  # ===========================================================================
+  # 1. PostgreSQL Relational Database with pgvector extension (CO1, CO2, CO6)
+  # ===========================================================================
+  mealbridge-db:
+    image: pgvector/pgvector:pg16
+    container_name: mealbridge-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-MealBridge_food_donation}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d MealBridge_food_donation"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mealbridge-net
+
+  # ===========================================================================
+  # 2. MongoDB Document Database (CO2, CO5, CO6)
+  # ===========================================================================
+  mealbridge-mongo:
+    image: mongo:7.0
+    container_name: mealbridge-mongo
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mealbridge-net
+
+  # ===========================================================================
+  # 3. FastAPI Core Backend Monolith & Gateway (CO1, CO2, CO3, CO5, CO6)
+  # ===========================================================================
+  mealbridge-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: mealbridge-backend
+    restart: always
+    environment:
+      POSTGRES_HOST: mealbridge-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-MealBridge_food_donation}
+      MONGO_URL: mongodb://mealbridge-mongo:27017/mealbridge_auth
+      ACTIVITY_SERVICE_URL: http://mealbridge-activity-service:5001
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-mealbridge_super_secure_jwt_secret_key_2026}
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      FROM_EMAIL: ${FROM_EMAIL:-no-reply@mealbridge.org}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      mealbridge-db:
+        condition: service_healthy
+      mealbridge-mongo:
+        condition: service_healthy
+    networks:
+      - mealbridge-net
+
+  # ===========================================================================
+  # 4. Node.js Activity Microservice (CO4, CO5, CO6)
+  # ===========================================================================
+  mealbridge-activity-service:
+    build:
+      context: ./microservices/activity-service
+      dockerfile: Dockerfile
+    container_name: mealbridge-activity-service
+    restart: always
+    environment:
+      PORT: 5001
+      MONGO_URL: mongodb://mealbridge-mongo:27017/mealbridge_auth_activity
+    ports:
+      - "5001:5001"
+    depends_on:
+      mealbridge-mongo:
+        condition: service_healthy
+    networks:
+      - mealbridge-net
+
+  # ===========================================================================
+  # 5. React Frontend + Nginx Reverse Proxy (CO6)
+  # ===========================================================================
+  mealbridge-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: mealbridge-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+    depends_on:
+      - mealbridge-backend
+    networks:
+      - mealbridge-net
+
+  # ===========================================================================
+  # 6. pgAdmin Relational Catalog Management (CO1 Catalog Tools)
+  # ===========================================================================
+  mealbridge-pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: mealbridge-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@mealbridge.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "5050:80"
+    depends_on:
+      - mealbridge-db
+    networks:
+      - mealbridge-net
+
+networks:
+  mealbridge-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  mongodata:

@@ -21,6 +21,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import FindFood from './pages/FindFood';
 import ComingSoon from './pages/ComingSoon';
+import Events from './pages/Events';
+import CreateEvent from './pages/CreateEvent';
+import SemanticSearchPage from './pages/SemanticSearchPage';
 
 // =====================================================
 // DONOR
@@ -111,6 +114,29 @@ export default function App() {
                 <Route
                   path="/find-food"
                   element={<FindFood />}
+                />
+
+                <Route
+                  path="/search"
+                  element={<SemanticSearchPage />}
+                />
+
+                <Route
+                  path="/events"
+                  element={
+                    <ProtectedRoute>
+                      <Events />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/events/create"
+                  element={
+                    <ProtectedRoute>
+                      <CreateEvent />
+                    </ProtectedRoute>
+                  }
                 />
 
                 {/* =================================================
@@ -308,7 +334,7 @@ export default function App() {
                 <Route
                   path="/volunteer/tracking/:id"
                   element={
-                    <RoleBasedRoute roles={['VOLUNTEER']}>
+                    <RoleBasedRoute roles={['VOLUNTEER', 'ADMIN']}>
                       <LiveTracking />
                     </RoleBasedRoute>
                   }

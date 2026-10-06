@@ -27,4 +27,5 @@ async def test_notification_model():
             )
 
 
-asyncio.run(test_notification_model())
+if __name__ == \"__main__\":
+    asyncio.run(test_notification_model())

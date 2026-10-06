@@ -20,13 +20,13 @@ function filterByTab(assignments, tab) {
     case 'pending':
       return assignments.filter(
         (a) =>
-          String(a.status || '').toUpperCase() === 'PENDING'
+          ['PENDING', 'REQUESTED'].includes(String(a.status || '').toUpperCase())
       );
 
     case 'accepted':
       return assignments.filter(
         (a) =>
-          String(a.status || '').toUpperCase() === 'ASSIGNED'
+          ['ASSIGNED', 'ACCEPTED'].includes(String(a.status || '').toUpperCase())
       );
 
     case 'active':
@@ -37,6 +37,7 @@ function filterByTab(assignments, tab) {
           ).toUpperCase();
 
           return (
+            status === 'PICKUP_IN_PROGRESS' ||
             status === 'PICKED_UP' ||
             status === 'IN_TRANSIT'
           );
@@ -46,7 +47,7 @@ function filterByTab(assignments, tab) {
     case 'completed':
       return assignments.filter(
         (a) =>
-          String(a.status || '').toUpperCase() === 'DELIVERED'
+          ['DELIVERED', 'COMPLETED'].includes(String(a.status || '').toUpperCase())
       );
 
     default:
@@ -62,46 +63,34 @@ export default function Assignments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const loadAssignments = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const data = await apiClient.get('/api/assignments/');
+
+      setAssignments(
+        Array.isArray(data) ? data : []
+      );
+    } catch (err) {
+      console.error(
+        'Failed to load volunteer assignments:',
+        err
+      );
+
+      setError(
+        err?.message ||
+        'Failed to load assignments.'
+      );
+      setAssignments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
-
-    const loadAssignments = async () => {
-      try {
-        setLoading(true);
-        setError('');
-
-        const data = await apiClient.get('/api/assignments/');
-
-        if (!cancelled) {
-          setAssignments(
-            Array.isArray(data) ? data : []
-          );
-        }
-      } catch (err) {
-        console.error(
-          'Failed to load volunteer assignments:',
-          err
-        );
-
-        if (!cancelled) {
-          setError(
-            err?.message ||
-            'Failed to load assignments.'
-          );
-          setAssignments([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
     loadAssignments();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const tabs = STATUS_TABS.map((tab) => ({
@@ -178,11 +167,16 @@ export default function Assignments() {
             <AssignmentCard
               key={assignment.assignment_id}
               assignment={assignment}
-              onAccept={() =>
-                navigate(
-                  `/volunteer/assignments/${assignment.assignment_id}`
-                )
-              }
+              onAccept={async () => {
+                try {
+                  await apiClient.post(`/api/assignments/${assignment.assignment_id}/accept`);
+                  await loadAssignments();
+                  navigate(`/volunteer/assignments/${assignment.assignment_id}`);
+                } catch (acceptErr) {
+                  console.error('Accept assignment error:', acceptErr);
+                  navigate(`/volunteer/assignments/${assignment.assignment_id}`);
+                }
+              }}
               onViewDetails={() =>
                 navigate(
                   `/volunteer/assignments/${assignment.assignment_id}`

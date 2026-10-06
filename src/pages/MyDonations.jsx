@@ -55,20 +55,24 @@ function normalizeStatus(status) {
   return String(status || 'POSTED').toUpperCase();
 }
 
-function getStatusLabel(status) {
+function getStatusLabel(status, donation) {
   const value = normalizeStatus(status);
 
-  const labels = {
-    POSTED: 'Posted',
-    MATCHED: 'Matched',
-    ACCEPTED: 'Accepted',
-    PICKED_UP: 'Picked Up',
-    IN_TRANSIT: 'In Transit',
-    DELIVERED: 'Delivered',
-    CANCELLED: 'Cancelled',
-  };
+  if (value === 'POSTED') return 'Looking for NGO';
+  if (value === 'MATCHED') {
+    return donation?.matched_ngo_name ? `Accepted by ${donation.matched_ngo_name}` : 'Accepted by NGO';
+  }
+  if (['ASSIGNED', 'PICKUP_IN_PROGRESS', 'ACCEPTED'].includes(value)) {
+    return donation?.assigned_volunteer_name ? `Volunteer Assigned: ${donation.assigned_volunteer_name}` : 'Volunteer Assigned';
+  }
+  if (value === 'PICKED_UP') return 'Picked Up by Volunteer';
+  if (value === 'IN_TRANSIT') {
+    return donation?.matched_ngo_name ? `On the way to ${donation.matched_ngo_name}` : 'In Transit';
+  }
+  if (['DELIVERED', 'COMPLETED'].includes(value)) return 'Delivered Successfully';
+  if (value === 'CANCELLED') return 'Cancelled';
 
-  return labels[value] || value.replaceAll('_', ' ');
+  return value.replaceAll('_', ' ');
 }
 
 function getStatusClass(status) {
@@ -511,7 +515,7 @@ export default function MyDonations() {
                             status
                           )}`}
                         >
-                          {getStatusLabel(status)}
+                          {getStatusLabel(status, donation)}
                         </span>
 
                       </div>

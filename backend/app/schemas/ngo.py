@@ -4,6 +4,21 @@ from pydantic import BaseModel, ConfigDict
 
 
 # =========================================================
+# NGO CREATE
+# =========================================================
+
+class NGOCreate(BaseModel):
+    user_id: int
+    organization_name: str
+    address: str | None = None
+    capacity: float | None = None
+    capacity_unit: str | None = None
+    food_requirements: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+
+
+# =========================================================
 # NGO UPDATE
 # =========================================================
 

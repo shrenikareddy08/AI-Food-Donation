@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user
@@ -10,6 +10,7 @@ from app.models.donation import Donation
 from app.models.ngo import NGO
 from app.models.volunteer import Volunteer
 from app.models.match import Match
+from app.models.user import User
 
 from app.schemas.assignment import (
     AssignmentCreate,
@@ -25,6 +26,52 @@ router = APIRouter(
     prefix="/api/assignments",
     tags=["Assignments"]
 )
+
+
+async def _enrich_assignment_details(session: AsyncSession, assignment: Assignment):
+    try:
+        # Donation and donor
+        don_res = await session.execute(
+            select(Donation, User.name, User.phone)
+            .join(User, Donation.donor_id == User.user_id)
+            .where(Donation.donation_id == assignment.donation_id)
+        )
+        don_row = don_res.first()
+        if don_row:
+            d, donor_name, donor_phone = don_row
+            assignment.food_name = d.food_name
+            assignment.food_type = d.food_type
+            assignment.quantity = float(d.quantity) if d.quantity else None
+            assignment.unit = d.unit
+            assignment.donor_name = donor_name
+            assignment.donor_phone = donor_phone
+
+        # NGO
+        ngo_res = await session.execute(
+            select(NGO, User.phone)
+            .join(User, NGO.user_id == User.user_id)
+            .where(NGO.ngo_id == assignment.ngo_id)
+        )
+        ngo_row = ngo_res.first()
+        if ngo_row:
+            ngo, ngo_phone = ngo_row
+            assignment.ngo_name = ngo.organization_name
+            assignment.ngo_phone = ngo_phone
+
+        # Volunteer
+        if assignment.volunteer_id:
+            vol_res = await session.execute(
+                select(Volunteer, User.name, User.phone)
+                .join(User, Volunteer.user_id == User.user_id)
+                .where(Volunteer.volunteer_id == assignment.volunteer_id)
+            )
+            vol_row = vol_res.first()
+            if vol_row:
+                _, vol_name, vol_phone = vol_row
+                assignment.volunteer_name = vol_name
+                assignment.volunteer_phone = vol_phone
+    except Exception:
+        pass
 
 
 # =========================================================
@@ -287,7 +334,11 @@ async def get_assignments(
         result = await session.execute(
             select(Assignment)
             .where(
-                Assignment.volunteer_id == volunteer.volunteer_id
+                or_(
+                    Assignment.volunteer_id == volunteer.volunteer_id,
+                    Assignment.status.in_(["REQUESTED", "PENDING"]),
+                    Assignment.volunteer_id.is_(None)
+                )
             )
             .order_by(
                 Assignment.assigned_at.desc()
@@ -363,7 +414,10 @@ async def get_assignments(
             detail="You do not have permission to view assignments"
         )
 
-    return result.scalars().all()
+    assignments = result.scalars().all()
+    for a in assignments:
+        await _enrich_assignment_details(session, a)
+    return assignments
 
 
 # =========================================================
@@ -399,6 +453,7 @@ async def get_assignment(
     # -----------------------------------------------------
 
     if current_user["role"] == "ADMIN":
+        await _enrich_assignment_details(session, assignment)
         return assignment
 
     # -----------------------------------------------------
@@ -406,27 +461,7 @@ async def get_assignment(
     # -----------------------------------------------------
 
     if current_user["role"] == "VOLUNTEER":
-
-        volunteer_result = await session.execute(
-            select(Volunteer).where(
-                Volunteer.user_id == current_user["user_id"]
-            )
-        )
-
-        volunteer = volunteer_result.scalar_one_or_none()
-
-        if not volunteer:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Volunteer profile not found"
-            )
-
-        if assignment.volunteer_id != volunteer.volunteer_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only view your own assignments"
-            )
-
+        await _enrich_assignment_details(session, assignment)
         return assignment
 
     # -----------------------------------------------------
@@ -455,6 +490,7 @@ async def get_assignment(
                 detail="You can only view your NGO's assignments"
             )
 
+        await _enrich_assignment_details(session, assignment)
         return assignment
 
     # -----------------------------------------------------
@@ -483,12 +519,137 @@ async def get_assignment(
                 detail="You can only view assignments for your donations"
             )
 
+        await _enrich_assignment_details(session, assignment)
         return assignment
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="You do not have permission to view this assignment"
     )
+
+
+# =========================================================
+# ACCEPT ASSIGNMENT (VOLUNTEER CLAIM)
+# =========================================================
+
+@router.post(
+    "/{assignment_id}/accept",
+    response_model=AssignmentResponse
+)
+async def accept_assignment(
+    assignment_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    if current_user["role"] != "VOLUNTEER":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only volunteers can accept assignments"
+        )
+
+    volunteer_result = await session.execute(
+        select(Volunteer).where(
+            Volunteer.user_id == current_user["user_id"]
+        )
+    )
+    volunteer = volunteer_result.scalar_one_or_none()
+
+    if not volunteer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Volunteer profile not found"
+        )
+
+    assignment_result = await session.execute(
+        select(Assignment).where(
+            Assignment.assignment_id == assignment_id
+        )
+    )
+    assignment = assignment_result.scalar_one_or_none()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found"
+        )
+
+    if (
+        assignment.volunteer_id is not None
+        and assignment.volunteer_id != volunteer.volunteer_id
+        and assignment.status not in ["REQUESTED", "PENDING"]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This assignment has already been claimed by another volunteer"
+        )
+
+    donation_result = await session.execute(
+        select(Donation).where(
+            Donation.donation_id == assignment.donation_id
+        )
+    )
+    donation = donation_result.scalar_one_or_none()
+
+    ngo_result = await session.execute(
+        select(NGO).where(
+            NGO.ngo_id == assignment.ngo_id
+        )
+    )
+    ngo = ngo_result.scalar_one_or_none()
+
+    # Assign to this volunteer
+    assignment.volunteer_id = volunteer.volunteer_id
+    assignment.status = "ACCEPTED"
+    volunteer.availability = "ASSIGNED"
+
+    if donation:
+        donation.status = "ASSIGNED"
+
+    food_title = donation.food_name if donation else "food donation"
+
+    # Notify Volunteer
+    await create_notification(
+        session=session,
+        user_id=volunteer.user_id,
+        message=f"You accepted the delivery request for {food_title}.",
+        notification_type="ASSIGNMENT_ACCEPTED"
+    )
+
+    # Notify NGO
+    if ngo:
+        await create_notification(
+            session=session,
+            user_id=ngo.user_id,
+            message=f"Volunteer has accepted the delivery request for {food_title}.",
+            notification_type="ASSIGNMENT_ACCEPTED"
+        )
+
+    # Notify Donor
+    if donation:
+        await create_notification(
+            session=session,
+            user_id=donation.donor_id,
+            message=f"A volunteer has accepted the delivery request for your donation {food_title}.",
+            notification_type="ASSIGNMENT_ACCEPTED"
+        )
+
+    await create_audit_log(
+        session=session,
+        user_id=current_user["user_id"],
+        action="ASSIGNMENT_ACCEPTED",
+        entity_type="ASSIGNMENT",
+        entity_id=assignment.assignment_id,
+        details=(
+            f"Volunteer #{volunteer.volunteer_id} accepted assignment "
+            f"#{assignment.assignment_id} for donation #{assignment.donation_id}"
+        )
+    )
+
+    await session.commit()
+    await session.refresh(assignment)
+    await _enrich_assignment_details(session, assignment)
+
+    return assignment
 
 
 # =========================================================
@@ -509,10 +670,14 @@ async def update_assignment_status(
     new_status = data.status.upper()
 
     allowed_statuses = [
+        "REQUESTED",
+        "ACCEPTED",
         "ASSIGNED",
+        "PICKUP_IN_PROGRESS",
         "PICKED_UP",
         "IN_TRANSIT",
         "DELIVERED",
+        "COMPLETED",
         "CANCELLED"
     ]
 
@@ -520,8 +685,8 @@ async def update_assignment_status(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                "Status must be ASSIGNED, PICKED_UP, "
-                "IN_TRANSIT, DELIVERED, or CANCELLED"
+                "Status must be REQUESTED, ACCEPTED, ASSIGNED, "
+                "PICKUP_IN_PROGRESS, PICKED_UP, IN_TRANSIT, DELIVERED, COMPLETED, or CANCELLED"
             )
         )
 
@@ -565,8 +730,9 @@ async def update_assignment_status(
     # CHECK USER PERMISSION
     # -----------------------------------------------------
 
-    if current_user["role"] == "ADMIN":
+    volunteer = None
 
+    if current_user["role"] == "ADMIN":
         pass
 
     elif current_user["role"] == "VOLUNTEER":
@@ -585,7 +751,11 @@ async def update_assignment_status(
                 detail="Volunteer profile not found"
             )
 
-        if assignment.volunteer_id != volunteer.volunteer_id:
+        if assignment.volunteer_id is None:
+            # Claim unassigned assignment
+            assignment.volunteer_id = volunteer.volunteer_id
+            volunteer.availability = "ASSIGNED"
+        elif assignment.volunteer_id != volunteer.volunteer_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only update your own assignments"
@@ -605,7 +775,7 @@ async def update_assignment_status(
     # PREVENT CHANGES AFTER DELIVERY/CANCELLATION
     # -----------------------------------------------------
 
-    if assignment.status in ["DELIVERED", "CANCELLED"]:
+    if assignment.status in ["DELIVERED", "COMPLETED", "CANCELLED"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This assignment can no longer be updated"
@@ -614,17 +784,13 @@ async def update_assignment_status(
     old_status = assignment.status
 
     # -----------------------------------------------------
-    # UPDATE ASSIGNMENT
+    # UPDATE ASSIGNMENT & DONATION STATUS
     # -----------------------------------------------------
 
     assignment.status = new_status
 
-    # -----------------------------------------------------
-    # UPDATE DONATION STATUS
-    # -----------------------------------------------------
-
-    if new_status == "ASSIGNED":
-        donation.status = "MATCHED"
+    if new_status in ["ASSIGNED", "ACCEPTED", "PICKUP_IN_PROGRESS"]:
+        donation.status = "ASSIGNED"
 
     elif new_status == "PICKED_UP":
         donation.status = "PICKED_UP"
@@ -632,7 +798,8 @@ async def update_assignment_status(
     elif new_status == "IN_TRANSIT":
         donation.status = "IN_TRANSIT"
 
-    elif new_status == "DELIVERED":
+    elif new_status in ["DELIVERED", "COMPLETED"]:
+        assignment.status = "DELIVERED"
         donation.status = "DELIVERED"
 
     elif new_status == "CANCELLED":
@@ -651,55 +818,100 @@ async def update_assignment_status(
     ngo = ngo_result.scalar_one_or_none()
 
     # -----------------------------------------------------
-    # FIND VOLUNTEER
+    # FIND VOLUNTEER IF NOT ALREADY QUERIED
     # -----------------------------------------------------
 
-    volunteer_result = await session.execute(
-        select(Volunteer).where(
-            Volunteer.volunteer_id == assignment.volunteer_id
+    if volunteer is None and assignment.volunteer_id is not None:
+        volunteer_result = await session.execute(
+            select(Volunteer).where(
+                Volunteer.volunteer_id == assignment.volunteer_id
+            )
         )
-    )
-
-    volunteer = volunteer_result.scalar_one_or_none()
+        volunteer = volunteer_result.scalar_one_or_none()
 
     # -----------------------------------------------------
     # RELEASE VOLUNTEER
     # -----------------------------------------------------
 
-    if new_status in ["DELIVERED", "CANCELLED"]:
-
+    if new_status in ["DELIVERED", "COMPLETED", "CANCELLED"]:
         if volunteer:
             volunteer.availability = "AVAILABLE"
 
     # -----------------------------------------------------
-    # NOTIFY DONOR
+    # DISPATCH CONTEXT-AWARE NOTIFICATIONS
     # -----------------------------------------------------
 
-    await create_notification(
-        session=session,
-        user_id=donation.donor_id,
-        message=(
-            f"Your donation {donation.food_name} "
-            f"status changed to {new_status}."
-        ),
-        notification_type="ASSIGNMENT_STATUS"
-    )
+    food_title = donation.food_name if donation else "food donation"
 
-    # -----------------------------------------------------
-    # NOTIFY NGO
-    # -----------------------------------------------------
-
-    if ngo:
-
+    if new_status in ["DELIVERED", "COMPLETED"]:
+        ngo_name = ngo.organization_name if ngo else "the NGO"
         await create_notification(
             session=session,
-            user_id=ngo.user_id,
-            message=(
-                f"Delivery status for {donation.food_name} "
-                f"changed to {new_status}."
-            ),
+            user_id=donation.donor_id,
+            message=f"Your donation {food_title} has been delivered successfully to {ngo_name}.",
+            notification_type="DELIVERY_COMPLETED"
+        )
+        if ngo:
+            await create_notification(
+                session=session,
+                user_id=ngo.user_id,
+                message=f"The food donation {food_title} has been delivered to your location.",
+                notification_type="DELIVERY_COMPLETED"
+            )
+        if volunteer:
+            await create_notification(
+                session=session,
+                user_id=volunteer.user_id,
+                message=f"Delivery completed successfully! Thank you for redistributing food with MealBridge.",
+                notification_type="DELIVERY_COMPLETED"
+            )
+
+    elif new_status == "PICKED_UP":
+        await create_notification(
+            session=session,
+            user_id=donation.donor_id,
+            message=f"Volunteer has picked up your food donation {food_title}.",
+            notification_type="PICKUP_COMPLETED"
+        )
+        if ngo:
+            await create_notification(
+                session=session,
+                user_id=ngo.user_id,
+                message=f"Volunteer has picked up {food_title} and is on the way.",
+                notification_type="PICKUP_COMPLETED"
+            )
+
+    elif new_status == "IN_TRANSIT":
+        if ngo:
+            await create_notification(
+                session=session,
+                user_id=ngo.user_id,
+                message=f"Food donation {food_title} is in transit to your location.",
+                notification_type="ASSIGNMENT_STATUS"
+            )
+
+    elif new_status == "PICKUP_IN_PROGRESS":
+        await create_notification(
+            session=session,
+            user_id=donation.donor_id,
+            message=f"Volunteer is on the way to pick up your donation {food_title}.",
+            notification_type="PICKUP_IN_PROGRESS"
+        )
+
+    else:
+        await create_notification(
+            session=session,
+            user_id=donation.donor_id,
+            message=f"Your donation {food_title} status changed to {new_status}.",
             notification_type="ASSIGNMENT_STATUS"
         )
+        if ngo:
+            await create_notification(
+                session=session,
+                user_id=ngo.user_id,
+                message=f"Delivery status for {food_title} changed to {new_status}.",
+                notification_type="ASSIGNMENT_STATUS"
+            )
 
     # -----------------------------------------------------
     # AUDIT LOG
@@ -720,5 +932,6 @@ async def update_assignment_status(
 
     await session.commit()
     await session.refresh(assignment)
+    await _enrich_assignment_details(session, assignment)
 
     return assignment
