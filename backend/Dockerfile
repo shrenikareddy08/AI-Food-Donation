@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source code
-COPY backend/ .
+COPY . .
 
 # Set Python path to /app
 ENV PYTHONPATH=/app

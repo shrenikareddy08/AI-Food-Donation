@@ -1,8 +1,11 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import or_, select
+
+logger = logging.getLogger(__name__)
 
 from app.core.rate_limiter import login_rate_limiter, otp_rate_limiter
 from app.core.security import (
@@ -21,6 +24,12 @@ from app.schemas.auth import (
 from app.schemas.user import UserResponse
 from app.services.email_service import email_service
 from app.services.otp_service import create_otp, verify_otp
+from app.services.sms_service import (
+    SMSDeliveryError,
+    is_valid_phone,
+    normalize_phone,
+    sms_service,
+)
 
 
 router = APIRouter(
@@ -36,50 +45,71 @@ ALLOWED_REGISTRATION_ROLES = {
 }
 
 
+@router.post("/send-otp")
 @router.post("/request-otp")
 async def request_otp(data: OTPRequest, request: Request):
-    otp_rate_limiter.check(request, data.email)
+    user_email = data.email.strip().lower()
+    otp_rate_limiter.check(request, user_email)
 
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(User).where(User.email == data.email)
+        res_email = await session.execute(
+            select(User).where(User.email == user_email)
         )
-
-        existing_user = result.scalar_one_or_none()
-
-        if existing_user is not None:
+        if res_email.scalars().first() is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email is already registered",
             )
 
+        if data.phone:
+            norm_phone = normalize_phone(data.phone)
+            if norm_phone:
+                ten_digit = norm_phone[-10:] if len(norm_phone) >= 10 else norm_phone
+                res_phone = await session.execute(
+                    select(User).where(
+                        (User.phone == norm_phone) | (User.phone == ten_digit)
+                    )
+                )
+                if res_phone.scalars().first() is not None:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Phone number is already registered",
+                    )
+
+    # Generate EXACTLY ONE OTP for this registration request
     otp = await create_otp(
-        email=data.email,
+        email=user_email,
         purpose=data.purpose,
     )
 
-    # Dispatches email notification to user
-    await email_service.send_otp_email(
-        email=data.email,
+    # Send OTP strictly to user's email
+    email_sent = await email_service.send_otp_email(
+        email=user_email,
         otp=otp,
         purpose=data.purpose,
     )
+    if not email_sent and email_service.enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to deliver OTP via email. Please check your email configuration.",
+        )
 
     return {
-        "message": "OTP generated and sent to email successfully",
-        "email": data.email,
+        "message": "OTP generated and sent successfully to your email",
+        "email": user_email,
+        "channel": "email",
         "purpose": data.purpose,
-        "development_otp": otp,
     }
 
 
 @router.post("/verify-otp")
 async def verify_otp_endpoint(data: OTPVerifyRequest, request: Request):
-    otp_rate_limiter.check(request, data.email)
+    user_email = data.email.strip().lower()
+    otp_rate_limiter.check(request, user_email)
 
     verified = await verify_otp(
-        email=data.email,
-        otp=data.otp,
+        email=user_email,
+        otp=data.otp.strip(),
         purpose=data.purpose,
     )
 
@@ -91,7 +121,7 @@ async def verify_otp_endpoint(data: OTPVerifyRequest, request: Request):
 
     return {
         "message": "OTP verified successfully",
-        "email": data.email,
+        "email": user_email,
     }
 
 
@@ -114,12 +144,15 @@ async def register(data: RegisterRequest):
             detail="Password must contain at least 8 characters",
         )
 
+    user_email = data.email.strip().lower()
+    norm_phone = normalize_phone(data.phone) if data.phone else None
+
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(User).where(User.email == data.email)
+            select(User).where(User.email == user_email)
         )
 
-        existing_user = result.scalar_one_or_none()
+        existing_user = result.scalars().first()
 
         if existing_user is not None:
             raise HTTPException(
@@ -127,9 +160,25 @@ async def register(data: RegisterRequest):
                 detail="Email is already registered",
             )
 
+        if norm_phone:
+            ten_digit = norm_phone[-10:] if len(norm_phone) >= 10 else norm_phone
+            res_phone = await session.execute(
+                select(User).where(
+                    (User.phone == norm_phone) | (User.phone == ten_digit)
+                )
+            )
+            if res_phone.scalars().first() is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Phone number is already registered",
+                )
+
         otp_record = await otp_collection.find_one(
             {
-                "email": data.email,
+                "$or": [
+                    {"email": user_email},
+                    {"identifier": user_email},
+                ],
                 "purpose": "REGISTER",
                 "verified": True,
             },
@@ -143,12 +192,12 @@ async def register(data: RegisterRequest):
             )
 
         new_user = User(
-            name=data.name,
-            email=data.email,
+            name=data.name.strip(),
+            email=user_email,
             password=hash_password(data.password),
-            phone=data.phone,
+            phone=norm_phone or (data.phone.strip() if data.phone else None),
             role=role,
-            location=data.location,
+            location=data.location.strip() if data.location else None,
         )
 
         session.add(new_user)
@@ -173,11 +222,18 @@ async def login(
 ):
     login_rate_limiter.check(request, form_data.username)
 
+    norm_username = normalize_phone(form_data.username) if form_data.username else None
+
     async with AsyncSessionLocal() as session:
+        conditions = [User.email == form_data.username]
+        if norm_username:
+            ten_digit = norm_username[-10:] if len(norm_username) >= 10 else norm_username
+            conditions.append(User.phone == norm_username)
+            conditions.append(User.phone == ten_digit)
+            conditions.append(User.email == f"{norm_username}@phone.mealbridge.org")
+
         result = await session.execute(
-            select(User).where(
-                User.email == form_data.username
-            )
+            select(User).where(or_(*conditions))
         )
 
         user = result.scalar_one_or_none()

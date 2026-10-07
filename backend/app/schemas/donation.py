@@ -26,6 +26,8 @@ class DonationCreate(BaseModel):
 
     location: str | None = None
 
+    pickup_address: str | None = None
+
     latitude: Decimal | None = None
 
     longitude: Decimal | None = None
@@ -54,6 +56,8 @@ class DonationUpdate(BaseModel):
     pickup_end: datetime | None = None
 
     location: str | None = None
+
+    pickup_address: str | None = None
 
     latitude: Decimal | None = None
 
@@ -93,6 +97,8 @@ class DonationResponse(BaseModel):
 
     location: str | None = None
 
+    pickup_address: str | None = None
+
     latitude: Decimal | None = None
 
     longitude: Decimal | None = None
@@ -109,6 +115,7 @@ class DonationResponse(BaseModel):
     assigned_volunteer_name: str | None = None
     assigned_volunteer_phone: str | None = None
     assignment_status: str | None = None
+    distance_km: float | None = None
 
     model_config = ConfigDict(
         from_attributes=True

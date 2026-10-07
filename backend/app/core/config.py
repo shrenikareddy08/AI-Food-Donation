@@ -17,14 +17,26 @@ class Settings(BaseSettings):
 
     OTP_HASH_SECRET: str = "mealbridge-otp-secret-change-this"
 
-    SMTP_HOST: str = "localhost"
-    SMTP_PORT: int = 587
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 465
+    SMTP_USERNAME: str = ""
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "no-reply@mealbridge.org"
     FROM_EMAIL: str = "no-reply@mealbridge.org"
+    SMTP_FROM_NAME: str = "MealBridge"
+    FRONTEND_URL: str = "http://localhost:5173"
 
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+
+    SMS_PROVIDER: str = "generic"
+    SMS_API_KEY: str = ""
+    SMS_API_URL: str = ""
+    SMS_SENDER_ID: str = "MLBRDG"
+    FAST2SMS_ROUTE: str = "otp"
+    FAST2SMS_TEMPLATE_ID: str = ""
+    FAST2SMS_OTP_ID: str = ""
 
     model_config = SettingsConfigDict(
         env_file=["backend/.env", ".env"],

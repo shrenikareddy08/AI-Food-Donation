@@ -8,6 +8,35 @@ oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/auth/login"
 )
 
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/api/auth/login",
+    auto_error=False
+)
+
+
+def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme_optional)
+) -> dict | None:
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+
+        user_id = payload.get("sub")
+        role = payload.get("role")
+
+        if user_id is None or role is None:
+            return None
+
+        return {
+            "user_id": int(user_id),
+            "role": role
+        }
+
+    except Exception:
+        return None
+
+
 
 def get_current_user(
     token: str = Depends(oauth2_scheme)

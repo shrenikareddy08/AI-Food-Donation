@@ -19,7 +19,8 @@ from app.routers import (
     rag,
     analytics_sql,
     health,
-    activities
+    activities,
+    phone,
 )
 
 
@@ -63,6 +64,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(donations.router)
 app.include_router(ngos.router)
+app.include_router(ngos.ngo_email_router)
 app.include_router(volunteers.router)
 app.include_router(matches.router)
 app.include_router(assignments.router)
@@ -77,6 +79,7 @@ app.include_router(rag.router)
 app.include_router(analytics_sql.router)
 app.include_router(health.router)
 app.include_router(activities.router)
+app.include_router(phone.router)
 
 
 # =========================================================

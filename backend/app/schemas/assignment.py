@@ -36,9 +36,16 @@ class AssignmentResponse(BaseModel):
     unit: str | None = None
     donor_name: str | None = None
     donor_phone: str | None = None
+    donor_location: str | None = None
+    pickup_latitude: float | None = None
+    pickup_longitude: float | None = None
+    delivery_latitude: float | None = None
+    delivery_longitude: float | None = None
+    distance_km: float | None = None
     ngo_name: str | None = None
     ngo_phone: str | None = None
     volunteer_name: str | None = None
     volunteer_phone: str | None = None
+    volunteer_email: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

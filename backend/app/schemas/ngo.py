@@ -24,6 +24,7 @@ class NGOCreate(BaseModel):
 
 class NGOUpdate(BaseModel):
     organization_name: str | None = None
+    email: str | None = None
     address: str | None = None
     capacity: float | None = None
     capacity_unit: str | None = None
@@ -40,6 +41,9 @@ class NGOResponse(BaseModel):
     ngo_id: int
     user_id: int
     organization_name: str
+    email: str | None = None
+    email_verified: bool = False
+    email_verified_at: datetime | None = None
     address: str | None = None
     capacity: float | None = None
     capacity_unit: str | None = None
@@ -52,3 +56,18 @@ class NGOResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
     )
+
+
+# =========================================================
+# EMAIL VERIFICATION SCHEMAS
+# =========================================================
+
+class EmailVerificationRequest(BaseModel):
+    email: str | None = None
+
+
+class EmailVerificationResponse(BaseModel):
+    message: str
+    email: str | None = None
+    email_verified: bool = False
+    status: str = "PENDING"

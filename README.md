@@ -386,5 +386,72 @@ node microservices/activity-service/test.js
 
 ---
 
+## 📧 Real-Time Email Setup & Verification
+
+MealBridge includes an enterprise SMTP email verification engine with cryptographic single-use token lifecycle management, 30-minute expiration, and rate-limited resend protection.
+
+### Step-by-Step Setup Guide:
+
+1. **Create/Select an SMTP Provider**: Use Gmail SMTP, Outlook, SendGrid, Brevo, or Mailgun.
+2. **Configure `.env`**: Set the following variables in your environment:
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD=your-16-char-app-password
+   SMTP_FROM_EMAIL=your-email@gmail.com
+   SMTP_FROM_NAME=MealBridge
+   FRONTEND_URL=http://localhost:5173
+   ```
+3. **Gmail App Password (Crucial)**:
+   - For Gmail, generate a **Google App Password** (Google Account -> Security -> 2-Step Verification -> App Passwords).
+   - Generate an App Password specifically for "MealBridge".
+4. **Security Notice**: **Do NOT use your normal Gmail account password**. Normal Gmail passwords will be rejected by Google's SMTP servers.
+5. **Start Docker Services**:
+   ```bash
+   docker compose up -d
+   ```
+6. **Open MealBridge**:
+   - Web Client: [http://localhost:5173](http://localhost:5173)
+   - API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+7. **Register/Login as NGO**:
+   - Navigate to `/login` or `/select-role`, sign in as an NGO organization (e.g., `priya@helpinghands.in` or create a new NGO).
+8. **Enter a Real Organization Email**:
+   - Go to `/ngo/profile` (Organization Profile).
+   - Enter your real organization email address in the Organization Email input field.
+9. **Click "Send Verification Email"**:
+   - MealBridge generates a cryptographically secure token and delivers an HTML verification link to the recipient inbox via STARTTLS.
+10. **Open Real Inbox**:
+    - Locate the verification email with subject `Verify your MealBridge NGO Email`.
+11. **Click "Verify Email"**:
+    - The verification link directs to `http://localhost:5173/verify-email?token=<TOKEN>`.
+    - MealBridge validates the token, activates single-use consumption, and transitions status to verified.
+12. **Confirm Dashboard Shows "Email Verified"**:
+    - Organization Profile dynamically displays the `✓ Email Verified` badge.
+    - Verified NGOs now qualify for real-time donation match email alerts!
+
+---
+
+## 🐳 Docker Run Commands
+
+```bash
+# Build and start all services in background
+docker compose up -d --build
+
+# View running services status
+docker compose ps
+
+# Inspect backend logs in real-time
+docker compose logs -f mealbridge-backend
+
+# Restart backend service after code or env changes
+docker compose restart mealbridge-backend
+
+# Stop all services without deleting data
+docker compose down
+```
+
+---
+
 ## 📄 License & Academic Attribution
 Developed as part of the Database Management Systems & Advanced Backend Engineering curriculum. All rights reserved.

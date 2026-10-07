@@ -1,10 +1,15 @@
+import base64
+import math
+import os
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_current_user_optional
 from app.db.postgres import get_session
 
 from app.models.donation import Donation
@@ -30,6 +35,30 @@ router = APIRouter(
     prefix="/api/donations",
     tags=["Donations"]
 )
+
+UPLOADS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+
+def _save_base64_image(image_data: str) -> str | None:
+    try:
+        if not image_data or not image_data.startswith("data:image/"):
+            return image_data
+        header, encoded = image_data.split(",", 1)
+        ext = "jpg"
+        if "png" in header:
+            ext = "png"
+        elif "webp" in header:
+            ext = "webp"
+        elif "jpeg" in header:
+            ext = "jpg"
+        filename = f"food_{uuid.uuid4().hex[:12]}.{ext}"
+        filepath = os.path.join(UPLOADS_DIR, filename)
+        with open(filepath, "wb") as f:
+            f.write(base64.b64decode(encoded))
+        return f"/api/donations/images/{filename}"
+    except Exception:
+        return None
 
 
 # =========================================================
@@ -67,6 +96,8 @@ def to_database_datetime(
 
 async def _enrich_donation_workflow(session: AsyncSession, donation: Donation):
     try:
+        donation.pickup_address = donation.location
+
         # 1. Query match details (prefer ACCEPTED, else latest)
         match_res = await session.execute(
             select(Match, NGO.organization_name)
@@ -80,6 +111,31 @@ async def _enrich_donation_workflow(session: AsyncSession, donation: Donation):
         if selected_match:
             donation.matched_ngo_name = selected_match[1]
             donation.match_status = selected_match[0].status
+
+        # Calculate distance to NGO if coordinates exist
+        if donation.latitude is not None and donation.longitude is not None:
+            ngo_coords = None
+            if selected_match:
+                ngo_obj = (await session.execute(
+                    select(NGO.latitude, NGO.longitude).where(NGO.ngo_id == selected_match[0].ngo_id)
+                )).first()
+                if ngo_obj and ngo_obj[0] is not None and ngo_obj[1] is not None:
+                    ngo_coords = (float(ngo_obj[0]), float(ngo_obj[1]))
+
+            if not ngo_coords:
+                first_ngo = (await session.execute(
+                    select(NGO.latitude, NGO.longitude).where(NGO.latitude.isnot(None)).order_by(NGO.ngo_id).limit(1)
+                )).first()
+                if first_ngo and first_ngo[0] is not None and first_ngo[1] is not None:
+                    ngo_coords = (float(first_ngo[0]), float(first_ngo[1]))
+
+            if ngo_coords:
+                lat1, lon1 = math.radians(float(donation.latitude)), math.radians(float(donation.longitude))
+                lat2, lon2 = math.radians(ngo_coords[0]), math.radians(ngo_coords[1])
+                dlat, dlon = lat2 - lat1, lon2 - lon1
+                a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                donation.distance_km = round(6371.0 * c, 1)
 
         # 2. Query assignment details
         assign_res = await session.execute(
@@ -199,6 +255,14 @@ async def create_donation(
         data.pickup_end
     )
 
+    image_url = data.image_url
+    if image_url and image_url.startswith("data:image/"):
+        saved = _save_base64_image(image_url)
+        if saved:
+            image_url = saved
+
+    location_val = data.location or data.pickup_address
+
     donation = Donation(
         donor_id=current_user["user_id"],
 
@@ -216,13 +280,13 @@ async def create_donation(
 
         pickup_end=pickup_end,
 
-        location=data.location,
+        location=location_val,
 
         latitude=data.latitude,
 
         longitude=data.longitude,
 
-        image_url=data.image_url,
+        image_url=image_url,
 
         status="POSTED"
     )
@@ -290,6 +354,21 @@ async def create_donation(
                 notification_type="NEW_MATCH"
             )
 
+            # Send operational match email only to verified NGO email
+            if getattr(ngo, "email_verified", False) and ngo.email:
+                try:
+                    await email_service.send_donation_match_email(
+                        email=ngo.email,
+                        ngo_name=ngo.organization_name,
+                        food_name=donation.food_name,
+                        quantity=f"{donation.quantity} {donation.unit or 'servings'}",
+                        pickup_location=donation.location or "Donor Location",
+                        expiry=str(donation.expiry_time) if donation.expiry_time else "Not specified"
+                    )
+                except Exception as mail_err:
+                    import logging
+                    logging.getLogger("mealbridge.donations").warning(f"Could not send match email to NGO {ngo.ngo_id}: {mail_err}")
+
     # Notify donor about matching broadcast
     await create_notification(
         session=session,
@@ -343,7 +422,7 @@ async def create_donation(
 )
 async def get_donation(
     donation_id: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict | None = Depends(get_current_user_optional),
     session: AsyncSession = Depends(get_session)
 ):
 
@@ -375,10 +454,10 @@ async def get_donation(
     donation, donor_name, donor_phone = row
 
     if (
-        current_user["role"] == "DONOR"
-        and
-        donation.donor_id !=
-        current_user["user_id"]
+        current_user
+        and current_user["role"] == "DONOR"
+        and donation.donor_id != current_user["user_id"]
+        and donation.status not in ["POSTED", "MATCHED", "ACCEPTED", "ASSIGNED", "PICKED_UP", "DELIVERED"]
     ):
 
         raise HTTPException(
@@ -464,6 +543,16 @@ async def update_donation(
     update_data = data.model_dump(
         exclude_unset=True
     )
+
+    if "pickup_address" in update_data:
+        addr = update_data.pop("pickup_address")
+        if "location" not in update_data or not update_data["location"]:
+            update_data["location"] = addr
+
+    if "image_url" in update_data and update_data["image_url"] and update_data["image_url"].startswith("data:image/"):
+        saved = _save_base64_image(update_data["image_url"])
+        if saved:
+            update_data["image_url"] = saved
 
     for field, value in update_data.items():
 
@@ -608,3 +697,19 @@ async def delete_donation(
     await session.commit()
 
     return None
+
+
+# =========================================================
+# GET UPLOADED DONATION IMAGE
+# =========================================================
+
+@router.get("/images/{filename}")
+async def get_donation_image(filename: str):
+    safe_name = os.path.basename(filename)
+    file_path = os.path.join(UPLOADS_DIR, safe_name)
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found"
+        )
+    return FileResponse(file_path)

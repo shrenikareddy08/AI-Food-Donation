@@ -221,6 +221,9 @@ CREATE TABLE public.ngos (
     ngo_id integer NOT NULL,
     user_id integer NOT NULL,
     organization_name character varying(150) NOT NULL,
+    email character varying(150),
+    email_verified boolean DEFAULT false NOT NULL,
+    email_verified_at timestamp without time zone,
     address text,
     capacity numeric(10,2),
     capacity_unit character varying(20),
@@ -230,6 +233,16 @@ CREATE TABLE public.ngos (
     verification_status character varying(30) DEFAULT 'PENDING'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     embedding public.vector(384)
+);
+
+
+CREATE TABLE public.ngo_email_verification_tokens (
+    id SERIAL PRIMARY KEY,
+    ngo_id integer NOT NULL REFERENCES public.ngos(ngo_id) ON DELETE CASCADE,
+    token character varying(255) NOT NULL,
+    expires_at timestamp without time zone NOT NULL,
+    used_at timestamp without time zone,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 

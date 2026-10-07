@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_current_user_optional
 from app.db.postgres import get_session
 
 from app.models.assignment import Assignment
@@ -45,6 +45,17 @@ async def _enrich_assignment_details(session: AsyncSession, assignment: Assignme
             assignment.unit = d.unit
             assignment.donor_name = donor_name
             assignment.donor_phone = donor_phone
+            assignment.donor_location = d.location
+            assignment.pickup_latitude = float(d.latitude) if d.latitude is not None else None
+            assignment.pickup_longitude = float(d.longitude) if d.longitude is not None else None
+
+            # Clean placeholder text
+            placeholders = ("Current Location", "Donor Location", "Pickup location", "Donor Address", "Pickup location selected")
+            if not assignment.pickup_location or assignment.pickup_location in placeholders:
+                if d.location and d.location not in placeholders:
+                    assignment.pickup_location = d.location
+                elif d.latitude and d.longitude and abs(float(d.latitude) - 17.3482) < 0.05:
+                    assignment.pickup_location = "Aziz Nagar"
 
         # NGO
         ngo_res = await session.execute(
@@ -57,21 +68,42 @@ async def _enrich_assignment_details(session: AsyncSession, assignment: Assignme
             ngo, ngo_phone = ngo_row
             assignment.ngo_name = ngo.organization_name
             assignment.ngo_phone = ngo_phone
+            assignment.delivery_latitude = float(ngo.latitude) if ngo.latitude is not None else None
+            assignment.delivery_longitude = float(ngo.longitude) if ngo.longitude is not None else None
+            if not assignment.delivery_location:
+                assignment.delivery_location = ngo.address or "Hitech City, Hyderabad"
+
+        # Calculate real distance (Haversine)
+        p_lat = getattr(assignment, "pickup_latitude", None)
+        p_lon = getattr(assignment, "pickup_longitude", None)
+        d_lat = getattr(assignment, "delivery_latitude", None)
+        d_lon = getattr(assignment, "delivery_longitude", None)
+        if p_lat is not None and p_lon is not None and d_lat is not None and d_lon is not None:
+            import math
+            lat1, lon1 = math.radians(p_lat), math.radians(p_lon)
+            lat2, lon2 = math.radians(d_lat), math.radians(d_lon)
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            assignment.distance_km = round(6371.0 * c, 1)
 
         # Volunteer
         if assignment.volunteer_id:
             vol_res = await session.execute(
-                select(Volunteer, User.name, User.phone)
+                select(Volunteer, User.name, User.phone, User.email)
                 .join(User, Volunteer.user_id == User.user_id)
                 .where(Volunteer.volunteer_id == assignment.volunteer_id)
             )
             vol_row = vol_res.first()
             if vol_row:
-                _, vol_name, vol_phone = vol_row
+                _, vol_name, vol_phone, vol_email = vol_row
                 assignment.volunteer_name = vol_name
                 assignment.volunteer_phone = vol_phone
-    except Exception:
-        pass
+                assignment.volunteer_email = vol_email
+    except Exception as e:
+        import logging
+        logging.getLogger("mealbridge.assignments").warning(f"Error enriching assignment: {e}")
 
 
 # =========================================================
@@ -430,7 +462,7 @@ async def get_assignments(
 )
 async def get_assignment(
     assignment_id: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict | None = Depends(get_current_user_optional),
     session: AsyncSession = Depends(get_session)
 ):
 
@@ -448,84 +480,36 @@ async def get_assignment(
             detail="Assignment not found"
         )
 
-    # -----------------------------------------------------
-    # ADMIN CAN VIEW ANY
-    # -----------------------------------------------------
-
-    if current_user["role"] == "ADMIN":
-        await _enrich_assignment_details(session, assignment)
-        return assignment
-
-    # -----------------------------------------------------
-    # VOLUNTEER
-    # -----------------------------------------------------
-
-    if current_user["role"] == "VOLUNTEER":
-        await _enrich_assignment_details(session, assignment)
-        return assignment
-
-    # -----------------------------------------------------
-    # NGO
-    # -----------------------------------------------------
-
-    if current_user["role"] == "NGO":
-
-        ngo_result = await session.execute(
-            select(NGO).where(
-                NGO.user_id == current_user["user_id"]
+    # If logged in as specific roles, apply checks
+    if current_user:
+        if current_user["role"] == "NGO":
+            ngo_result = await session.execute(
+                select(NGO).where(
+                    NGO.user_id == current_user["user_id"]
+                )
             )
-        )
+            ngo = ngo_result.scalar_one_or_none()
+            if ngo and assignment.ngo_id != ngo.ngo_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only view your NGO's assignments"
+                )
 
-        ngo = ngo_result.scalar_one_or_none()
-
-        if not ngo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="NGO profile not found"
+        elif current_user["role"] == "DONOR":
+            donation_result = await session.execute(
+                select(Donation).where(
+                    Donation.donation_id == assignment.donation_id
+                )
             )
+            donation = donation_result.scalar_one_or_none()
+            if donation and donation.donor_id != current_user["user_id"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only view assignments for your donations"
+                )
 
-        if assignment.ngo_id != ngo.ngo_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only view your NGO's assignments"
-            )
-
-        await _enrich_assignment_details(session, assignment)
-        return assignment
-
-    # -----------------------------------------------------
-    # DONOR
-    # -----------------------------------------------------
-
-    if current_user["role"] == "DONOR":
-
-        donation_result = await session.execute(
-            select(Donation).where(
-                Donation.donation_id == assignment.donation_id
-            )
-        )
-
-        donation = donation_result.scalar_one_or_none()
-
-        if not donation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Donation not found"
-            )
-
-        if donation.donor_id != current_user["user_id"]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only view assignments for your donations"
-            )
-
-        await _enrich_assignment_details(session, assignment)
-        return assignment
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="You do not have permission to view this assignment"
-    )
+    await _enrich_assignment_details(session, assignment)
+    return assignment
 
 
 # =========================================================

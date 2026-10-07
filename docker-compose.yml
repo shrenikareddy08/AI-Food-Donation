@@ -45,10 +45,12 @@ services:
   # ===========================================================================
   mealbridge-backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: mealbridge-backend
     restart: always
+    env_file:
+      - .env
     environment:
       POSTGRES_HOST: mealbridge-db
       POSTGRES_PORT: 5432
@@ -61,11 +63,22 @@ services:
       JWT_ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 1440
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USERNAME: ${SMTP_USERNAME:-${SMTP_USER:-}}
+      SMTP_USER: ${SMTP_USER:-${SMTP_USERNAME:-}}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      FROM_EMAIL: ${FROM_EMAIL:-no-reply@mealbridge.org}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-${FROM_EMAIL:-no-reply@mealbridge.org}}
+      FROM_EMAIL: ${FROM_EMAIL:-${SMTP_FROM_EMAIL:-no-reply@mealbridge.org}}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-MealBridge}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SMS_PROVIDER: ${SMS_PROVIDER:-generic}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      SMS_API_URL: ${SMS_API_URL:-}
+      SMS_SENDER_ID: ${SMS_SENDER_ID:-MLBRDG}
+      FAST2SMS_ROUTE: ${FAST2SMS_ROUTE:-otp}
+      FAST2SMS_TEMPLATE_ID: ${FAST2SMS_TEMPLATE_ID:-}
+      FAST2SMS_OTP_ID: ${FAST2SMS_OTP_ID:-}
     ports:
       - "8000:8000"
     volumes:
@@ -103,14 +116,14 @@ services:
   # ===========================================================================
   mealbridge-frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mealbridge-frontend
     restart: always
     ports:
       - "5173:80"
     volumes:
-      - ./dist:/usr/share/nginx/html:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - mealbridge-backend
     networks:

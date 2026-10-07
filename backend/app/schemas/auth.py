@@ -12,10 +12,14 @@ class RegisterRequest(BaseModel):
 
 class OTPRequest(BaseModel):
     email: EmailStr
+    phone: str | None = None
+    channel: str | None = None
     purpose: str = "REGISTER"
 
 
 class OTPVerifyRequest(BaseModel):
     email: EmailStr
     otp: str
-    purpose: str = "REGISTER"
+    phone: str | None = None
+    channel: str | None = None
+    purpose: str = "REGISTER"

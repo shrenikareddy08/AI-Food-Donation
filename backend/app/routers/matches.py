@@ -741,12 +741,19 @@ async def claim_donation_by_ngo(
         )
     )
     if not existing_assign.scalar_one_or_none():
+        real_pickup = donation.location
+        if not real_pickup or real_pickup in ("Current Location", "Donor Location", "Pickup location selected", "Unknown location"):
+            if donation.latitude and abs(float(donation.latitude) - 17.3482) < 0.05:
+                real_pickup = "Aziz Nagar"
+            else:
+                real_pickup = donation.location or "Hyderabad"
+
         new_assignment = Assignment(
             donation_id=donation.donation_id,
             ngo_id=ngo.ngo_id,
             volunteer_id=None,
-            pickup_location=donation.location or "Donor Location",
-            delivery_location=ngo.address or "NGO Center",
+            pickup_location=real_pickup,
+            delivery_location=ngo.address or "Hitech City, Hyderabad",
             status="REQUESTED"
         )
         session.add(new_assignment)

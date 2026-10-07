@@ -1,5 +1,34 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+*.local
+
+# Python / Backend
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyc
+venv/
+.venv/
+.venv_mac/
+**/venv/
+**/.venv/
+.pytest_cache/
+**/.pytest_cache/
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,28 +36,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IDE, OS & System Metadata
 .DS_Store
+**/.DS_Store
+.idea/
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-# Environment files
-.env
-.env.*
-!.env.example
 
-# Python
-venv/
-.venv/
-__pycache__/
-*.py[cod]
+# Agent & Workspace Temporary Metadata
+.gemini/
+scratch/
